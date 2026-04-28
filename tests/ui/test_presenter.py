@@ -232,6 +232,7 @@ def test_save_project_as_script(presenter):
     assert presenter.view.undo_stack.isClean()
     presenter.model.project.write_script.assert_called_with(script="new path//project_script.py")
 
+
 @pytest.mark.parametrize(
     ["reply", "undo_clean_state", "expected"],
     [
