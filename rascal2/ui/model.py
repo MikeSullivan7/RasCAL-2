@@ -152,11 +152,11 @@ class MainWindowModel(QtCore.QObject):
     def save_project_as_script(self, save_path):
         """Save the project to the save path as a script file.
 
-                Parameters
-                ----------
-                save_path : str
-                    The save path of the project.
-                """
+        Parameters
+        ----------
+        save_path : str
+            The save path of the project.
+        """
         script_path = save_path + "/project_script.py"
         self.project.write_script(script=script_path)
 

@@ -114,6 +114,9 @@ class MainWindowPresenter:
         save_as : bool
             Whether we are saving to the existing save path or to a specified folder.
 
+        as_script: bool
+            Whether we are saving the project as a script or not.
+
         Returns
         -------
          : bool

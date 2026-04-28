@@ -219,6 +219,19 @@ def test_save_project(recent_projects_mock, presenter):
     recent_projects_mock.assert_called_with("new path/")
 
 
+def test_save_project_as_script(presenter):
+    """Test that projects can be saved as a script, optionally saved as a new folder."""
+    presenter.model.project = MagicMock()
+    presenter.model.project.name = "test_name"
+    presenter.model.controls = MagicMock()
+    presenter.view.project_widget.stacked_widget.currentIndex = MagicMock(return_value=0)
+    presenter.save_project(as_script=True)
+    presenter.model.project.write_script.assert_called_once()
+
+    presenter.save_project(as_script=True, save_as=True)
+    assert presenter.view.undo_stack.isClean()
+    presenter.model.project.write_script.assert_called_with(script="new path//project_script.py")
+
 @pytest.mark.parametrize(
     ["reply", "undo_clean_state", "expected"],
     [
