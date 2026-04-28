@@ -16,8 +16,7 @@ except ImportError:  # pragma: no cover - optional dependency
 
 
 RE_BILAYER = re.compile(
-    r"""bilayer\s*\(\s*inner\s*=\s*([A-Za-z0-9_]+)\s*,\s*outer\s*=\s*([A-Za-z0-9_]+)\s*\)""",
-    flags=re.IGNORECASE,
+    r"""^bilayer\s*\(\s*inner\s*=\s*([A-Za-z0-9_]+)\s*,\s*outer\s*=\s*([A-Za-z0-9_]+)\s*\)\s*$"""
 )
 
 
@@ -90,12 +89,18 @@ def get_lipid_constants(lipid_name: str):
 def extract_bilayers_from_model(model):
     """Extract bilayer(inner=XXX, outer=YYY) tokens from model.stack."""
     stack = getattr(model, "stack", "")
-    bilayers = [{"inner": m.group(1), "outer": m.group(2)} for m in RE_BILAYER.finditer(stack)]
+    tokens = [t.strip() for t in stack.split("|")]
 
-    cleaned = RE_BILAYER.sub("", stack)
-    # Normalize separators that may be left behind after removing bilayer tokens.
-    parts = [p.strip() for p in cleaned.split("|") if p.strip()]
-    model.stack = " | ".join(parts)
+    bilayers = []
+    kept = []
+    for t in tokens:
+        m = RE_BILAYER.match(t)
+        if m:
+            bilayers.append({"inner": m.group(1), "outer": m.group(2)})
+        else:
+            kept.append(t)
+
+    model.stack = " | ".join(kept)
     return bilayers
 
 
@@ -121,12 +126,16 @@ def build_bilayer_specs(bilayer_specs_raw):
     bilayer_specs = []
     if not bilayer_specs_raw:
         return bilayer_specs
+    if not HAS_MOLGROUPS:
+        raise RuntimeError(
+            "Detected bilayer(...) in model stack, but molgroups.lipids is not installed."
+        )
 
     for spec in bilayer_specs_raw:
         inner = spec["inner"]
         outer = spec["outer"]
-        inner_consts = get_lipid_constants(inner) if HAS_MOLGROUPS else None
-        outer_consts = get_lipid_constants(outer) if HAS_MOLGROUPS else None
+        inner_consts = get_lipid_constants(inner)
+        outer_consts = get_lipid_constants(outer)
         bilayer_specs.append(
             {
                 "inner": inner,
