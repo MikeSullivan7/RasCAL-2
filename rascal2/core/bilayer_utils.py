@@ -15,10 +15,8 @@ except ImportError:  # pragma: no cover - optional dependency
     lipids = None
 
 
-RE_BILAYER_BLOCK = re.compile(r"""bilayer\s*\((.*?)\)""", flags=re.IGNORECASE)
-RE_BILAYER_KV = re.compile(
-    r"""\b(inner|outer)\b\s*=\s*(".*?"|'.*?'|[^,\s\)]+)""",
-    flags=re.IGNORECASE,
+RE_BILAYER = re.compile(
+    r"""^bilayer\s*\(\s*inner\s*=\s*([A-Za-z0-9_]+)\s*,\s*outer\s*=\s*([A-Za-z0-9_]+)\s*\)\s*$"""
 )
 
 
@@ -90,27 +88,19 @@ def get_lipid_constants(lipid_name: str):
 
 def extract_bilayers_from_model(model):
     """Extract bilayer(inner=XXX, outer=YYY) tokens from model.stack."""
-    if isinstance(model, str):
-        stack = model
-        can_rewrite_stack = False
-    else:
-        stack = getattr(model, "stack", "")
-        can_rewrite_stack = hasattr(model, "stack")
-    bilayers = []
-    for block in RE_BILAYER_BLOCK.finditer(stack):
-        kv = {}
-        for m in RE_BILAYER_KV.finditer(block.group(1)):
-            key = m.group(1).lower()
-            value = m.group(2).strip().strip("\"'")
-            kv[key] = value
-        if "inner" in kv and "outer" in kv:
-            bilayers.append({"inner": kv["inner"], "outer": kv["outer"]})
+    stack = getattr(model, "stack", "")
+    tokens = [t.strip() for t in stack.split("|")]
 
-    cleaned = RE_BILAYER_BLOCK.sub("", stack)
-    # Normalize separators that may be left behind after removing bilayer tokens.
-    parts = [p.strip() for p in cleaned.split("|") if p.strip()]
-    if can_rewrite_stack:
-        model.stack = " | ".join(parts)
+    bilayers = []
+    kept = []
+    for t in tokens:
+        m = RE_BILAYER.match(t)
+        if m:
+            bilayers.append({"inner": m.group(1), "outer": m.group(2)})
+        else:
+            kept.append(t)
+
+    model.stack = " | ".join(kept)
     return bilayers
 
 
@@ -136,12 +126,16 @@ def build_bilayer_specs(bilayer_specs_raw):
     bilayer_specs = []
     if not bilayer_specs_raw:
         return bilayer_specs
+    if not HAS_MOLGROUPS:
+        raise RuntimeError(
+            "Detected bilayer(...) in model stack, but molgroups.lipids is not installed."
+        )
 
     for spec in bilayer_specs_raw:
         inner = spec["inner"]
         outer = spec["outer"]
-        inner_consts = get_lipid_constants(inner) if HAS_MOLGROUPS else None
-        outer_consts = get_lipid_constants(outer) if HAS_MOLGROUPS else None
+        inner_consts = get_lipid_constants(inner)
+        outer_consts = get_lipid_constants(outer)
         bilayer_specs.append(
             {
                 "inner": inner,

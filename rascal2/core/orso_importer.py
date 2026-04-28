@@ -8,8 +8,8 @@ import numpy as np
 from orsopy.fileio import load_orso
 
 import ratapi as rat
-from rascal2.core.bilayer_utils import build_bilayer_specs, extract_bilayers_from_model
-from ratapi.models import CustomFile, Data, Parameter, Layer
+from rascal2.core.bilayer_utils import extract_bilayers_from_model
+from ratapi.models import Data, Parameter, Layer
 
 
 # -----------------------------------------------------------------------------
@@ -246,8 +246,7 @@ def import_ort_to_project(
         model0 = getattr(sample0, "model", None)
 
         if model0 is not None:
-            bilayer_specs_raw = extract_bilayers_from_model(model0)
-            bilayer_present = bool(bilayer_specs_raw)
+            extract_bilayers_from_model(model0)
             try:
                 resolved = model0.resolve_to_layers()
                 if len(resolved) >= 2:
@@ -315,10 +314,7 @@ def import_ort_to_project(
 
         model = getattr(sample, "model", None)
         if model is not None:
-            bilayers_here = extract_bilayers_from_model(model)
-            bilayer_present = bilayer_present or bool(bilayers_here)
-            if bilayers_here and not bilayer_specs_raw:
-                bilayer_specs_raw = bilayers_here
+            extract_bilayers_from_model(model)
             try:
                 resolved = model.resolve_to_layers()
                 bulk_out = resolved[-1]
@@ -369,7 +365,7 @@ def import_ort_to_project(
                 name="ORSO Bilayer Model",
                 filename=custom_filename,
                 language="python",
-                path=str(proj_dir),
+                path=".",
                 function_name=function_name,
             )
         )
