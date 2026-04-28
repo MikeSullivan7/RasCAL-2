@@ -1,10 +1,6 @@
 """Tests for bilayer stack parsing utilities."""
 
-from rascal2.core.bilayer_utils import (
-    _flatten_lipid,
-    build_bilayer_specs,
-    extract_bilayers_from_model,
-)
+from rascal2.core.bilayer_utils import _flatten_lipid, extract_bilayers_from_model
 
 
 class _Model:
@@ -37,11 +33,3 @@ def test_flatten_lipid_defaults_when_missing_constants():
     assert flat["v_tail_inner"] == 800.0
     assert flat["sld_head_inner"] == 1e-6
     assert flat["sld_tail_inner"] == 1e-6
-
-
-def test_build_bilayer_specs_uses_fallback_constants_without_molgroups():
-    specs = build_bilayer_specs([{"inner": "DPPC", "outer": "POPC"}])
-    assert len(specs) == 1
-    assert specs[0]["inner"] == "DPPC"
-    assert specs[0]["outer"] == "POPC"
-    assert specs[0]["v_head_inner"] > 0.0

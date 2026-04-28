@@ -126,12 +126,16 @@ def build_bilayer_specs(bilayer_specs_raw):
     bilayer_specs = []
     if not bilayer_specs_raw:
         return bilayer_specs
+    if not HAS_MOLGROUPS:
+        raise RuntimeError(
+            "Detected bilayer(...) in model stack, but molgroups.lipids is not installed."
+        )
 
     for spec in bilayer_specs_raw:
         inner = spec["inner"]
         outer = spec["outer"]
-        inner_consts = get_lipid_constants(inner) if HAS_MOLGROUPS else None
-        outer_consts = get_lipid_constants(outer) if HAS_MOLGROUPS else None
+        inner_consts = get_lipid_constants(inner)
+        outer_consts = get_lipid_constants(outer)
         bilayer_specs.append(
             {
                 "inner": inner,
