@@ -77,6 +77,20 @@ def test_save_project(empty_results, model):
     assert '"fitParams": []' in results
 
 
+def test_save_project_as_script(model):
+    model.project = Project(calculation="domains", name="test project")
+    with TemporaryDirectory() as tmpdir:
+        model.save_project_as_script(tmpdir)
+
+        script = Path(tmpdir, "project_script.py").read_text()
+
+    assert 'name="test project"' in script
+    assert 'calculation="domains"' in script
+    assert 'model="standard layers"' in script
+    assert 'geometry="air/substrate"' in script
+    assert 'absorption="False"' in script
+
+
 def test_load_project(empty_results, model):
     """The load function should load the correct controls object from JSON."""
     project = Project(name="test project", calculation="domains")
