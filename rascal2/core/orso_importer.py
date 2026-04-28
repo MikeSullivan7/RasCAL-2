@@ -8,6 +8,7 @@ import numpy as np
 from orsopy.fileio import load_orso
 
 import ratapi as rat
+from rascal2.core.bilayer_utils import extract_bilayers_from_model
 from ratapi.models import Data, Parameter, Layer
 
 
@@ -179,6 +180,7 @@ def import_ort_to_project(
         model0 = getattr(sample0, "model", None)
 
         if model0 is not None:
+            extract_bilayers_from_model(model0)
             try:
                 resolved = model0.resolve_to_layers()
                 if len(resolved) >= 2:
@@ -243,6 +245,7 @@ def import_ort_to_project(
 
         model = getattr(sample, "model", None)
         if model is not None:
+            extract_bilayers_from_model(model)
             try:
                 resolved = model.resolve_to_layers()
                 bulk_out = resolved[-1]
