@@ -177,6 +177,7 @@ def test_menu_element_present(test_view, submenu_name):
                 "",
                 "&Save",
                 "Save To &Folder...",
+                "Save Project as &Script...",
                 "",
                 "Export Fits",
                 "",

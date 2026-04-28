@@ -124,12 +124,14 @@ class MainWindowView(QtWidgets.QMainWindow):
         self.save_as_action.setIcon(QtGui.QIcon(path_for("save-project.png")))
         self.save_as_action.triggered.connect(lambda: self.presenter.save_project(save_as=True))
         self.save_as_action.setShortcut(QtGui.QKeySequence.StandardKey.SaveAs)
-        self.disabled_elements.append(self.save_project_action)
+        self.save_as_action.setEnabled(False)
+        self.disabled_elements.append(self.save_as_action)
 
         self.save_as_script_action = QtGui.QAction("Save Project as &Script...", self)
         self.save_as_script_action.setStatusTip("Save project as a script.")
         self.save_as_script_action.setIcon(QtGui.QIcon(path_for("save-project.png")))
         self.save_as_script_action.triggered.connect(lambda: self.presenter.save_project(save_as=True, as_script=True))
+        self.save_as_script_action.setEnabled(False)
         self.disabled_elements.append(self.save_as_script_action)
 
         self.undo_action = self.undo_stack.createUndoAction(self, "&Undo")
