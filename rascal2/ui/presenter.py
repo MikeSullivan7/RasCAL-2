@@ -136,7 +136,11 @@ class MainWindowPresenter:
                 return False
         try:
             if as_script:
-                self.model.save_project_as_script(to_path)
+                filename = self.model.project.name.replace(" ", "_")
+                save_file = self.view.get_save_file("Save Project as Script", filename, "*.py")
+                if not save_file:
+                    return
+                self.model.save_project_as_script(save_file)
             else:
                 self.model.save_project(to_path)
         except OSError as err:

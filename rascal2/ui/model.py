@@ -157,8 +157,7 @@ class MainWindowModel(QtCore.QObject):
         save_path : str
             The save path of the project.
         """
-        script_path = save_path + "/project_script.py"
-        self.project.write_script(script=script_path)
+        self.project.write_script(script=save_path)
 
     def is_project_example(self):
         return Path(self.save_path).is_relative_to(EXAMPLES_TEMP_PATH)

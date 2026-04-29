@@ -225,12 +225,9 @@ def test_save_project_as_script(presenter):
     presenter.model.project.name = "test_name"
     presenter.model.controls = MagicMock()
     presenter.view.project_widget.stacked_widget.currentIndex = MagicMock(return_value=0)
+    presenter.view.get_save_file = MagicMock(return_value="test_name.py")
     presenter.save_project(as_script=True)
-    presenter.model.project.write_script.assert_called_once()
-
-    presenter.save_project(as_script=True, save_as=True)
-    assert presenter.view.undo_stack.isClean()
-    presenter.model.project.write_script.assert_called_with(script="new path//project_script.py")
+    presenter.model.project.write_script.assert_called_once_with(script="test_name.py")
 
 
 @pytest.mark.parametrize(

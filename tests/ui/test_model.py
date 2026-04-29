@@ -80,9 +80,9 @@ def test_save_project(empty_results, model):
 def test_save_project_as_script(model):
     model.project = Project(calculation="domains", name="test project")
     with TemporaryDirectory() as tmpdir:
-        model.save_project_as_script(tmpdir)
+        model.save_project_as_script(tmpdir + "/test_script.py")
 
-        script = Path(tmpdir, "project_script.py").read_text()
+        script = Path(tmpdir, "test_script.py").read_text()
 
     assert 'name="test project"' in script
     assert 'calculation="domains"' in script
