@@ -303,6 +303,7 @@ class MainWindowView(QtWidgets.QMainWindow):
     def create_toolbar(self):
         """Create the toolbar."""
         self.toolbar = self.addToolBar("ToolBar")
+        self.toolbar.setStyleSheet("QToolButton { padding-left: 5px; padding-right: 5px; padding-top: 10px }")
         self.toolbar.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.PreventContextMenu)
         self.toolbar.setMovable(False)
 
