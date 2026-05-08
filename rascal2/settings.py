@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, TypeAlias
 
 from pydantic import BaseModel, Field
-from PyQt6 import QtCore
+from PyQt6 import QtCore, QtWidgets
 
 
 # we do this statically rather than making it an attribute of Settings because all fields in a Pydantic model
@@ -52,6 +52,7 @@ class SettingsGroups(StrEnum):
 class Styles(StrEnum):
     """Visual styles for RasCAL-2."""
 
+    System = 'system'
     Light = "light"
     Dark = "dark"
 
@@ -118,7 +119,7 @@ class Settings(BaseModel, validate_assignment=True, arbitrary_types_allowed=True
 
     # The Settings object's own model fields contain the within-project settings.
     # The global settings are read and written via this object using `set_global_settings`.
-    style: Styles = Field(default=Styles.Light, title=SettingsGroups.General, description="Style")
+    style: Styles = Field(default=Styles.System, title=SettingsGroups.General, description="Style")
     editor_fontsize: int = Field(default=12, title=SettingsGroups.General, description="Editor Font Size", gt=0)
     matlab_as_default_editor: bool = Field(
         default=False,
@@ -160,7 +161,7 @@ class Settings(BaseModel, validate_assignment=True, arbitrary_types_allowed=True
     def set_global_settings(self):
         """Set manually-set local settings as global settings."""
         global_settings = get_global_settings()
-        for setting in self.model_fields_set:
+        for setting in self.model_fields.keys():
             global_settings.setValue(global_name(setting), getattr(self, setting))
         global_settings.sync()
 
@@ -226,3 +227,25 @@ def update_recent_projects(path: str | None = None) -> list[str]:
     settings.setValue("recent_projects", new_recent_projects)
     settings.sync()
     return new_recent_projects
+
+def get_colour_scheme():
+    colour_scheme = get_global_settings().value("General/style", 'system')
+    match colour_scheme:
+        case 'system':
+            colour_scheme_default = QtCore.Qt.ColorScheme.Unknown
+        case 'light':
+            colour_scheme_default = QtCore.Qt.ColorScheme.Light
+        case 'dark':
+            colour_scheme_default = QtCore.Qt.ColorScheme.Dark
+    return colour_scheme_default
+
+def change_ui_style(style: Styles = Styles.System) -> None:
+    app = QtWidgets.QApplication.instance()
+    match style:
+        case "system":
+            colour_scheme = QtCore.Qt.ColorScheme.Unknown
+        case "light":
+            colour_scheme = QtCore.Qt.ColorScheme.Light
+        case "dark":
+            colour_scheme = QtCore.Qt.ColorScheme.Dark
+    app.styleHints().setColorScheme(colour_scheme)

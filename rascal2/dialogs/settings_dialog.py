@@ -7,7 +7,7 @@ from PyQt6 import QtCore, QtWidgets
 
 from rascal2.config import LOGGER, SETTINGS, MatlabHelper
 from rascal2.paths import MATLAB_ARCH_FILE
-from rascal2.settings import SettingsGroups
+from rascal2.settings import SettingsGroups, change_ui_style
 from rascal2.widgets.inputs import get_validated_input
 
 
@@ -29,7 +29,6 @@ class SettingsDialog(QtWidgets.QDialog):
 
         self.settings = SETTINGS.copy()
         self.matlab_tab = MatlabSetupTab()
-        self.appearance_tab = AppearanceSetupTab()
         self.reset_dialog = None
 
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -38,7 +37,6 @@ class SettingsDialog(QtWidgets.QDialog):
         self.tab_widget.addTab(SettingsTab(self, SettingsGroups.General), SettingsGroups.General)
         self.tab_widget.addTab(SettingsTab(self, SettingsGroups.Plotting), SettingsGroups.Plotting)
         self.tab_widget.addTab(self.matlab_tab, "Matlab")
-        self.tab_widget.addTab(self.appearance_tab, "Appearance")
         self.tab_widget.setTabVisible(0, parent.presenter.model.save_path != "")
         self.tab_widget.setTabVisible(1, parent.presenter.model.save_path != "")
 
@@ -71,6 +69,7 @@ class SettingsDialog(QtWidgets.QDialog):
     def reset_default_settings(self) -> None:
         """Reset the settings to the global defaults."""
         SETTINGS.reset_global_settings()
+        change_ui_style()
         self.accept()
 
 
@@ -123,6 +122,10 @@ class SettingsTab(QtWidgets.QWidget):
             The name of the setting to be modified by this slot
         """
         setattr(self.settings, setting, self.widgets[setting].get_data())
+
+        match setting:
+            case "style":
+                change_ui_style(self.widgets[setting].get_data())
 
 
 class MatlabSetupTab(QtWidgets.QWidget):
@@ -209,31 +212,3 @@ class MatlabSetupTab(QtWidgets.QWidget):
                 LOGGER.error("exception occurred", exc_info=ex)
 
         MatlabHelper().async_start()
-
-
-class AppearanceSetupTab(QtWidgets.QWidget):
-    """Dialog to adjust Matlab location settings."""
-
-    def __init__(self):
-        super().__init__()
-
-        form_layout = QtWidgets.QGridLayout()
-        form_layout.setVerticalSpacing(10)
-        form_layout.setHorizontalSpacing(0)
-
-        self.theme_select = QtWidgets.QComboBox(self)
-        self.theme_select.addItems(QtWidgets.QStyleFactory.keys())
-
-        self.colour_select = QtWidgets.QComboBox(self)
-        self.colour_select.addItems(["System", "Light", "Dark"])
-
-        form_layout.addWidget(QtWidgets.QLabel("Theme:"), 0, 0)
-        form_layout.addWidget(self.theme_select, 0, 1)
-        form_layout.addWidget(QtWidgets.QLabel("Colour:"), 2, 0)
-        form_layout.addWidget(self.colour_select, 2, 1)
-
-        main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addLayout(form_layout)
-        main_layout.addStretch(1)
-
-        self.setLayout(main_layout)
