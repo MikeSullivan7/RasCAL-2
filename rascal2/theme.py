@@ -1,11 +1,13 @@
-from contextlib import suppress
 import re
+from contextlib import suppress
+
 from PyQt6 import QtCore, QtGui, QtWidgets
-from rascal2.paths import path_for, IMAGES_PATH, STATIC_PATH
+
+from rascal2.paths import IMAGES_PATH, STATIC_PATH, path_for
 
 
 def set_stylesheet(app):
-
+    """Set the stylesheet of the app according to the given style.css file if available."""
     with suppress(FileNotFoundError), open(STATIC_PATH / "style.css") as stylesheet:
         palette = app.palette()
         replacements = {
@@ -20,17 +22,18 @@ def set_stylesheet(app):
 
 
 class ThemeManager(QtCore.QObject):
+    """Class to manage the Theme of the UI."""
+
     def __init__(self):
         super().__init__()
         scheme = QtWidgets.QApplication.styleHints().colorScheme()
-        self.cur_style = 'light' if scheme == QtCore.Qt.ColorScheme.Light else 'dark'
+        self.cur_style = "light" if scheme == QtCore.Qt.ColorScheme.Light else "dark"
 
     def eventFilter(self, obj, event):
-        """Catch close event for overlay widget"""
+        """Catch close event for overlay widget."""
         if isinstance(obj, QtWidgets.QApplication) and event.type() == QtCore.QEvent.Type.ApplicationPaletteChange:
-
             scheme = QtWidgets.QApplication.styleHints().colorScheme()
-            style = 'light' if scheme == QtCore.Qt.ColorScheme.Light else 'dark'
+            style = "light" if scheme == QtCore.Qt.ColorScheme.Light else "dark"
             if style != self.cur_style:
                 set_stylesheet(obj)
                 print(type(obj))
@@ -43,23 +46,24 @@ THEMES = ThemeManager()
 
 
 class IconEngine(QtGui.QIconEngine):
-    """Creates the icons for the application"""
+    """Create the icons for the application."""
+
     def __init__(self, filename):
         super().__init__()
         self.name = re.split(r"-dark.png|-light.png", filename)[0]
         self.update_icon()
 
     def update_icon(self):
-        """Updates the Icon"""
+        """Update the Icon."""
         scheme = QtWidgets.QApplication.styleHints().colorScheme()
-        style = 'light' if scheme == QtCore.Qt.ColorScheme.Light else 'dark'
+        style = "light" if scheme == QtCore.Qt.ColorScheme.Light else "dark"
 
         filename = f"{self.name}-light.png" if style == "light" else f"{self.name}-dark.png"
         path = path_for(filename)
         self.icon = QtGui.QIcon(path)
 
     def pixmap(self, size, mode, state):
-        """Creates the pixmap
+        """Create the pixmap.
 
         :param size: size
         :type size: QSize
@@ -72,7 +76,7 @@ class IconEngine(QtGui.QIconEngine):
         return self.icon.pixmap(size, mode, state)
 
     def paint(self, painter, rect, mode, state):
-        """Paints the icon
+        """Paint the icon.
 
         :param painter: painter
         :type painter: QPainter

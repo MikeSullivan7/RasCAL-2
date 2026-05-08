@@ -8,7 +8,6 @@ import ratapi
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-
 from rascal2.config import SETTINGS
 from rascal2.theme import IconEngine
 from rascal2.widgets.inputs import MultiSelectComboBox, ProgressButton

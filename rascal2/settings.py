@@ -52,7 +52,7 @@ class SettingsGroups(StrEnum):
 class Styles(StrEnum):
     """Visual styles for RasCAL-2."""
 
-    System = 'system'
+    System = "system"
     Light = "light"
     Dark = "dark"
 
@@ -161,7 +161,7 @@ class Settings(BaseModel, validate_assignment=True, arbitrary_types_allowed=True
     def set_global_settings(self):
         """Set manually-set local settings as global settings."""
         global_settings = get_global_settings()
-        for setting in self.model_fields.keys():
+        for setting in self.model_fields:
             global_settings.setValue(global_name(setting), getattr(self, setting))
         global_settings.sync()
 
@@ -228,18 +228,22 @@ def update_recent_projects(path: str | None = None) -> list[str]:
     settings.sync()
     return new_recent_projects
 
+
 def get_colour_scheme():
-    colour_scheme = get_global_settings().value("General/style", 'system')
+    """Get the currently selected colour scheme and converts it to relevant Qt colour scheme flag."""
+    colour_scheme = get_global_settings().value("General/style", "system")
     match colour_scheme:
-        case 'system':
+        case "system":
             colour_scheme_default = QtCore.Qt.ColorScheme.Unknown
-        case 'light':
+        case "light":
             colour_scheme_default = QtCore.Qt.ColorScheme.Light
-        case 'dark':
+        case "dark":
             colour_scheme_default = QtCore.Qt.ColorScheme.Dark
     return colour_scheme_default
 
+
 def change_ui_style(style: Styles = Styles.System) -> None:
+    """Change the style of the app GUI to the given style."""
     app = QtWidgets.QApplication.instance()
     match style:
         case "system":

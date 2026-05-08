@@ -3,13 +3,13 @@ from pathlib import Path
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 from rascal2.config import SETTINGS
-from rascal2.theme import IconEngine
 from rascal2.core.enums import UnsavedReply
 from rascal2.dialogs.about_dialog import AboutDialog
 from rascal2.dialogs.settings_dialog import SettingsDialog
 from rascal2.dialogs.startup_dialog import PROJECT_FILES, LoadDialog, LoadR1Dialog, NewProjectDialog, StartupDialog
 from rascal2.paths import EXAMPLES_PATH, EXAMPLES_TEMP_PATH, path_for
 from rascal2.settings import MDIGeometries, get_global_settings
+from rascal2.theme import IconEngine
 from rascal2.widgets import ControlsWidget, PlotWidget, TerminalWidget
 from rascal2.widgets.project import ProjectWidget
 from rascal2.widgets.startup import StartUpWidget
@@ -20,17 +20,17 @@ MAIN_WINDOW_TITLE = "RasCAL-2"
 
 
 class TitleProxyStyle(QtWidgets.QProxyStyle):
+    """Set style of Title bar."""
+
     def drawComplexControl(self, control, option, painter, widget=None):
         if control == QtWidgets.QStyle.ComplexControl.CC_TitleBar:
-            option.palette.setBrush(
-                    QtGui.QPalette.ColorRole.Window, option.palette.button().color()
-            )
-        super(TitleProxyStyle, self).drawComplexControl(
-            control, option, painter, widget
-        )
+            option.palette.setBrush(QtGui.QPalette.ColorRole.Window, option.palette.button().color())
+        super().drawComplexControl(control, option, painter, widget)
 
 
 class MdiSubWindow(QtWidgets.QMdiSubWindow):
+    """Class to handle MDI sub-windows."""
+
     def __init__(self, parent=None, flags=QtCore.Qt.WindowType.Widget):
         super().__init__(parent, flags)
         style = TitleProxyStyle(self.style())
