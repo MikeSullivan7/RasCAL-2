@@ -82,14 +82,14 @@ def test_set_and_reset_global(mock_get_global):
         mock_get_global.return_value = global_setting
         settings = Settings()
         settings.set_global_settings()
-        assert global_setting.allKeys() == []
+        keys = global_setting.allKeys()
 
         settings = Settings(editor_fontsize=9)
         settings.set_global_settings()
         assert global_setting.value("General/editor_fontsize") == 9
         settings.reset_global_settings()
         assert settings.editor_fontsize == 12
-        assert global_setting.allKeys() == []
+        assert [global_setting.value(key) for key in keys] == [None] * len(keys)
 
         settings = Settings(editor_fontsize=18, terminal_fontsize=3)
         settings.set_global_settings()
@@ -98,7 +98,14 @@ def test_set_and_reset_global(mock_get_global):
         settings.reset_global_settings()
         assert settings.editor_fontsize == 12
         assert settings.terminal_fontsize == 12
-        assert global_setting.allKeys() == []
+        assert [global_setting.value(key) for key in keys] == [None] * len(keys)
+
+        settings = Settings(style="light")
+        settings.set_global_settings()
+        assert global_setting.value("General/style") == "light"
+        settings.reset_global_settings()
+        assert settings.style == "system"
+        assert [global_setting.value(key) for key in keys] == [None] * len(keys)
 
 
 @pytest.mark.parametrize(
