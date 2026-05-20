@@ -97,7 +97,7 @@ class TerminalWidget(QtWidgets.QWidget):
 
     def clear(self):
         """Clear the text in the terminal."""
-        self.write_html('<div style="color: black;white-space: pre-line;"><b>" "</b></div>')
+        self.write_html('<div style="white-space: pre-line;"><b>" "</b></div>')
         self.text_area.moveCursor(QtGui.QTextCursor.MoveOperation.Start, QtGui.QTextCursor.MoveMode.MoveAnchor)
         self.text_area.setPlainText("")
         self.update()
