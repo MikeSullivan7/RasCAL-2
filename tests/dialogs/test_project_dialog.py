@@ -5,7 +5,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from PyQt6 import QtCore, QtWidgets
 
-from rascal2.dialogs.startup_dialog import PROJECT_FILES, LoadDialog, LoadR1Dialog, NewProjectDialog, StartupDialog
+from rascal2.dialogs.startup_dialog import (
+    PROJECT_FILES,
+    ImportProjectDialog,
+    LoadDialog,
+    NewProjectDialog,
+    StartupDialog,
+)
 
 
 class MockParentWindow(QtWidgets.QMainWindow):
@@ -25,7 +31,7 @@ view = MockParentWindow()
     (
         [NewProjectDialog, 1],
         [LoadDialog, 1],
-        [LoadR1Dialog, 1],
+        [ImportProjectDialog, 1],
     ),
 )
 def test_project_dialog_initial_state(dialog, num_widgets):
@@ -42,7 +48,7 @@ def test_project_dialog_initial_state(dialog, num_widgets):
         assert project_dialog.project_name_error.text() == "Project name needs to be specified."
         assert project_dialog.project_name_error.isHidden()
 
-    if dialog == LoadR1Dialog:
+    if dialog == ImportProjectDialog:
         assert project_dialog.project_folder.placeholderText() == "Select RasCAL-1 file"
         assert project_dialog.project_folder_label.text() == "RasCAL-1 file:"
     else:
@@ -75,7 +81,7 @@ def test_create_button(name, name_valid, folder, folder_valid, other_folder_erro
         mock_create.assert_not_called()
 
 
-@pytest.mark.parametrize("widget", [LoadDialog, LoadR1Dialog])
+@pytest.mark.parametrize("widget", [LoadDialog, ImportProjectDialog])
 @pytest.mark.parametrize("folder, folder_valid", [("", False), ("Folder", True)])
 @pytest.mark.parametrize("other_folder_error", [True, False])
 @patch("rascal2.dialogs.startup_dialog.Worker", autospec=True)

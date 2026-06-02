@@ -1,6 +1,6 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from rascal2.dialogs.startup_dialog import LoadDialog, LoadR1Dialog, NewProjectDialog
+from rascal2.dialogs.startup_dialog import ImportProjectDialog, LoadDialog, NewProjectDialog
 from rascal2.paths import path_for
 from rascal2.theme import get_correct_qt_color_scheme
 
@@ -67,7 +67,7 @@ class StartUpWidget(QtWidgets.QWidget):
         self.import_project_button.clicked.connect(lambda: self.parent().show_project_dialog(LoadDialog))
 
         self.import_r1_button = QtWidgets.QToolButton(objectName="ImportR1Button")
-        self.import_r1_button.clicked.connect(lambda: self.parent().show_project_dialog(LoadR1Dialog))
+        self.import_r1_button.clicked.connect(lambda: self.parent().show_project_dialog(ImportProjectDialog))
 
     def create_labels(self) -> None:
         """Create labels."""

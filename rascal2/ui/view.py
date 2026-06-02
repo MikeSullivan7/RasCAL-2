@@ -7,8 +7,14 @@ from rascal2.core.enums import UnsavedReply
 from rascal2.dialogs.about_dialog import AboutDialog
 from rascal2.dialogs.check_update_dialog import CheckUpdateDialog
 from rascal2.dialogs.settings_dialog import SettingsDialog
-from rascal2.dialogs.startup_dialog import PROJECT_FILES, LoadDialog, LoadR1Dialog, NewProjectDialog, StartupDialog
 from rascal2.paths import EXAMPLES_PATH, EXAMPLES_TEMP_PATH, path_for
+from rascal2.dialogs.startup_dialog import (
+    PROJECT_FILES,
+    ImportProjectDialog,
+    LoadDialog,
+    NewProjectDialog,
+    StartupDialog,
+)
 from rascal2.settings import MDIGeometries, get_global_settings
 from rascal2.theme import IconEngine
 from rascal2.widgets import ControlsWidget, PlotWidget, TerminalWidget
@@ -66,7 +72,7 @@ class MainWindowView(QtWidgets.QMainWindow):
         else:
             event.ignore()
 
-    def show_project_dialog(self, dialog: StartupDialog):
+    def show_project_dialog(self, dialog: StartupDialog, *args):
         """Show a startup dialog of a given type.
 
         Parameters
@@ -78,7 +84,7 @@ class MainWindowView(QtWidgets.QMainWindow):
             self.startup_dlg.hide()
 
         if self.presenter.ask_to_save_project():
-            project_dlg = dialog(self)
+            project_dlg = dialog(self, *args)
             project_dlg.show()
 
     def show_settings_dialog(self, tab_name=""):
@@ -113,7 +119,11 @@ class MainWindowView(QtWidgets.QMainWindow):
 
         self.open_r1_action = QtGui.QAction("Open &RasCAL-1 Project")
         self.open_r1_action.setStatusTip("Open a RasCAL-1 project")
-        self.open_r1_action.triggered.connect(lambda: self.show_project_dialog(LoadR1Dialog))
+        self.open_r1_action.triggered.connect(lambda: self.show_project_dialog(ImportProjectDialog, "*.mat"))
+
+        self.actionImportORT = QtGui.QAction("Import ORSO (.ort)…", self)
+        self.actionImportORT.setStatusTip("Import an ORSO .ort file (data + model)")
+        self.actionImportORT.triggered.connect(lambda: self.show_project_dialog(ImportProjectDialog, "*.ort"))
 
         self.save_project_action = QtGui.QAction("&Save", self)
         self.save_project_action.setStatusTip("Save project")
@@ -228,7 +238,9 @@ class MainWindowView(QtWidgets.QMainWindow):
         file_menu.addAction(self.new_project_action)
         file_menu.addSeparator()
         file_menu.addAction(self.open_project_action)
-        file_menu.addAction(self.open_r1_action)
+        file_submenu_import = file_menu.addMenu("&Import Project")
+        file_submenu_import.addAction(self.open_r1_action)
+        file_submenu_import.addAction(self.actionImportORT)
         file_menu.addSeparator()
         file_menu.addAction(self.save_project_action)
         file_menu.addAction(self.save_as_action)
