@@ -36,7 +36,6 @@ class ThemeManager(QtCore.QObject):
             style = "light" if scheme == QtCore.Qt.ColorScheme.Light else "dark"
             if style != self.cur_style:
                 set_stylesheet(obj)
-                print(type(obj))
                 self.cur_style = style
                 return True
         return False
