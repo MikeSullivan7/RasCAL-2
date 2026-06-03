@@ -79,6 +79,49 @@ class MainWindowPresenter:
         self.view.undo_stack.clear()
         self.view.enable_elements()
 
+    def import_ort_project(self, load_path: str):
+        """Load a RAT project from an ORSO project file.
+
+        Parameters
+        ----------
+        load_path : str
+            The path to the ORSO file.
+
+        """
+        self.model.load_orso_project(load_path)
+        self.model.results = self.quick_run()
+
+        # from rascal2.core.orso_importer import import_ort_to_project
+        # from pathlib import Path
+        # from rascal2.settings import update_recent_projects
+        #
+        # ort_file = Path(ort_path)
+        # proj_name = ort_file.stem.replace("_", " ").strip() or "ORSO Import"
+        # save_path = str(Path(project_folder))  # ✅ use what user selected
+        #
+        # self.model.create_project(proj_name, save_path)
+        #
+        # imported_project, imported_controls = import_ort_to_project(
+        #     ort_path,
+        #     base_project=self.model.project,
+        #     project_folder=save_path,
+        # )
+        #
+        # self.model.project = imported_project
+        # if imported_controls is not None:
+        #     self.model.controls = imported_controls
+        #
+        # # Optional preview run (no MATLAB required for standard layers)
+        # print("Imported layers:", len(self.model.project.layers))
+        # print("Imported parameters:", len(self.model.project.parameters))
+        # print("First layer:", self.model.project.layers[0] if self.model.project.layers else None)
+        #
+        # self.model.results = self.quick_run(self.model.project)
+        #
+        # # Persist so it becomes a normal RasCAL-2 project folder
+        # self.model.save_project(self.model.save_path)
+        # update_recent_projects(self.model.save_path)
+
     def update_title(self):
         suffix = " [Example]" if self.model.is_project_example() else f"[{self.model.save_path}]"
         self.view.setWindowTitle(

@@ -9,6 +9,7 @@ import ratapi.outputs
 from PyQt6 import QtCore
 
 from rascal2.paths import EXAMPLES_PATH, EXAMPLES_TEMP_PATH
+from rascal2.core.orso_importer import import_ort_to_project
 
 
 def copy_example_project(load_path):
@@ -228,6 +229,35 @@ class MainWindowModel(QtCore.QObject):
         self.project = rat.utils.convert.r1_to_project(load_path)
         self.controls = rat.Controls()
         self.save_path = str(Path(load_path).parent)
+
+    def load_orso_project(self, load_path: str):
+        """Load a project from a ORSO file.
+
+        Parameters
+        ----------
+        load_path : str
+            The path to the ORSO file.
+
+        """
+        ort_file = Path(load_path)
+        proj_name = ort_file.stem.replace("_", " ").strip() or "ORSO Import"
+        self.save_path = str(Path(load_path).parent)
+        self.create_project(proj_name, self.save_path)
+
+        imported_project, imported_controls = import_ort_to_project(
+            load_path,
+            base_project=self.project,
+            project_folder=self.save_path,
+        )
+
+        self.project = imported_project
+        if imported_controls is not None:
+            self.controls = imported_controls
+
+        # Optional preview run (no MATLAB required for standard layers)
+        print("Imported layers:", len(self.project.layers))
+        print("Imported parameters:", len(self.project.parameters))
+        print("First layer:", self.project.layers[0] if self.project.layers else None)
 
     def update_controls(self, new_values: dict):
         """Update the control attributes.
