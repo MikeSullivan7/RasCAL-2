@@ -15,6 +15,7 @@ from rascal2.dialogs.startup_dialog import (
     NewProjectDialog,
     StartupDialog,
 )
+from rascal2.paths import EXAMPLES_PATH, EXAMPLES_TEMP_PATH, path_for
 from rascal2.settings import MDIGeometries, get_global_settings
 from rascal2.theme import IconEngine
 from rascal2.widgets import ControlsWidget, PlotWidget, TerminalWidget

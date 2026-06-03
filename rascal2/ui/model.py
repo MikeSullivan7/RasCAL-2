@@ -10,6 +10,7 @@ from PyQt6 import QtCore
 
 from rascal2.paths import EXAMPLES_PATH, EXAMPLES_TEMP_PATH
 from rascal2.core.orso_importer import import_ort_to_project
+from rascal2.paths import EXAMPLES_PATH, EXAMPLES_TEMP_PATH
 
 
 def copy_example_project(load_path):
