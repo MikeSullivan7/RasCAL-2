@@ -69,7 +69,7 @@ class SettingsDialog(QtWidgets.QDialog):
     def reset_default_settings(self) -> None:
         """Reset the settings to the global defaults."""
         SETTINGS.reset_global_settings()
-        change_ui_style()
+        change_ui_style(SETTINGS.model_fields["style"].default)
         self.accept()
 
     def cancel_settings(self):
