@@ -45,7 +45,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.accept_button = QtWidgets.QPushButton("OK", self)
         self.accept_button.clicked.connect(self.update_settings)
         self.cancel_button = QtWidgets.QPushButton("Cancel", self)
-        self.cancel_button.clicked.connect(self.reject)
+        self.cancel_button.clicked.connect(self.cancel_settings)
 
         button_layout = QtWidgets.QHBoxLayout()
         button_layout.addWidget(self.reset_button)
@@ -71,6 +71,11 @@ class SettingsDialog(QtWidgets.QDialog):
         SETTINGS.reset_global_settings()
         change_ui_style()
         self.accept()
+
+    def cancel_settings(self):
+        if SETTINGS.style != self.settings.style:
+            change_ui_style(SETTINGS.style)
+        self.reject()
 
 
 class SettingsTab(QtWidgets.QWidget):
