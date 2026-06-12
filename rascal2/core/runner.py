@@ -7,7 +7,6 @@ from multiprocessing import Process, Queue
 
 import ratapi as rat
 from PyQt6 import QtCore
-from ratapi.utils.enums import Procedures
 
 from rascal2.config import MatlabHelper, get_matlab_engine
 
@@ -19,33 +18,33 @@ class RATRunner(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
 
-    def __init__(self, rat_inputs, procedure: Procedures, display_on: bool):
+    def __init__(self):
         super().__init__()
         self.timer = QtCore.QTimer()
         self.timer.setInterval(1)
         self.timer.timeout.connect(self.check_queue)
+        self.matlab_helper = MatlabHelper()
 
         # this queue handles both event data and results
         self.queue = Queue()
-        matlab_helper = MatlabHelper()
-        self.process = Process(
-            target=run,
-            args=(
-                self.queue,
-                rat_inputs,
-                procedure,
-                display_on,
-                matlab_helper.ready_event,
-                matlab_helper.engine_output,
-            ),
-        )
+        self.arg_queue = Queue()
+        self.rat_inputs = None
+        self.procedure = None
+        self.display_on = None
+        self.refresh_process_list()
         self.updated_problem = None
         self.results = None
         self.error = None
         self.events = []
 
+    def set_runner_args(self, rat_inputs, procedure, display_on: bool):
+        self.arg_queue.put((rat_inputs, procedure, display_on))
+
     def start(self):
         """Start the calculation."""
+        if not self.processes_list:
+            self.refresh_process_list()
+        self.process = self.processes_list.pop(0)
         self.process.start()
         self.timer.start()
 
@@ -71,8 +70,21 @@ class RATRunner(QtCore.QObject):
                 self.events.append(item)
                 self.event_received.emit()
 
+    def refresh_process_list(self):
+        self.processes_list = [Process(target=run, args=(
+            self.queue,
+            self.arg_queue,
+            self.matlab_helper.ready_event,
+            self.matlab_helper.engine_output,
+        )) for _ in range(5)]
 
-def run(queue, rat_inputs: tuple, procedure: str, display: bool, engine_ready, engine_output):
+    def clear_queues(self):
+        self.queue.empty()
+        self.arg_queue.empty()
+        self.events.clear()
+
+
+def run(queue, arg_queue, engine_ready, engine_output):
     """Run RAT and put the result into the queue.
 
     Parameters
@@ -87,6 +99,8 @@ def run(queue, rat_inputs: tuple, procedure: str, display: bool, engine_ready, e
         Whether to display events.
 
     """
+    rat_inputs, procedure, display = arg_queue.get()
+
     problem_definition, cpp_controls = rat_inputs
 
     if display:
