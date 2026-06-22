@@ -1,11 +1,11 @@
 import os
 import re
-import time
 import warnings
 from typing import Any
 
 import ratapi as rat
 import ratapi.wrappers
+from PyQt6.QtCore import QCoreApplication
 
 from rascal2.config import LOGGER, SETTINGS, MatlabHelper
 from rascal2.core import commands
@@ -30,11 +30,10 @@ class MainWindowPresenter:
         self.view = view
         self.model = MainWindowModel()
         self.worker = None
-        self.runner = RATRunner()
+        self.runner = RATRunner(self)
         self.runner.finished.connect(self.handle_results)
         self.runner.stopped.connect(self.handle_interrupt)
         self.runner.event_received.connect(self.handle_event)
-
 
     def create_project(self, name: str, save_path: str):
         """Create a new RAT project and controls object then initialise UI.
@@ -225,7 +224,6 @@ class MainWindowPresenter:
     def run(self):
         """Run rat using multiprocessing."""
         # reset terminal
-        self.t1 = time.perf_counter()
         self.view.terminal_widget.progress_bar.setVisible(False)
         if SETTINGS.clear_terminal:
             self.view.terminal_widget.clear()
@@ -236,11 +234,8 @@ class MainWindowPresenter:
         self.model.controls.initialise_IPC()
         rat_inputs = rat.inputs.make_input(self.model.project, self.model.controls)
         display_on = self.model.controls.display != rat.utils.enums.Display.Off
-
         self.runner.set_runner_args(rat_inputs, self.model.controls.procedure, display_on)
-
         self.view.terminal_widget.write("Initializing RAT Process...")
-        self.t2 = time.perf_counter()
         self.runner.start()
 
     def handle_results(self):
@@ -256,9 +251,6 @@ class MainWindowPresenter:
         self.view.handle_results(self.runner.results)
         self.model.controls.delete_IPC()
         self.runner.clear_queues()
-        self.t3 = time.perf_counter()
-        print(f"{(self.t2 - self.t1)=}")
-        print(f"{(self.t3 - self.t1)=}")
 
     def handle_interrupt(self):
         """Handle a RAT run being interrupted."""
@@ -271,20 +263,20 @@ class MainWindowPresenter:
 
     def handle_event(self):
         """Handle event data produced by the RAT run."""
-        if self.runner.events:
-            event = self.runner.events.pop(0)
-            match event:
-                case str():
-                    self.view.terminal_widget.write(event)
-                    chi_squared = get_live_chi_squared(event, str(self.model.controls.procedure))
-                    if chi_squared is not None:
-                        self.view.controls_widget.chi_squared.setText(chi_squared)
-                case rat.events.ProgressEventData():
-                    self.view.terminal_widget.update_progress(event)
-                case rat.events.PlotEventData():
-                    self.view.plot_widget.plot_with_blit(event)
-                case LogData():
-                    LOGGER.log(event.level, event.msg)
+        event = self.runner.events.pop(0)
+        match event:
+            case str():
+                self.view.terminal_widget.write(event)
+                chi_squared = get_live_chi_squared(event, str(self.model.controls.procedure))
+                if chi_squared is not None:
+                    self.view.controls_widget.update_chi_squared(chi_squared)
+            case rat.events.ProgressEventData():
+                self.view.terminal_widget.update_progress(event)
+            case rat.events.PlotEventData():
+                self.view.plot_widget.plot_with_blit(event)
+            case LogData():
+                LOGGER.log(event.level, event.msg)
+        QCoreApplication.processEvents()
 
     def edit_project(self, updated_project: dict, preview: bool = True) -> None:
         """Edit the Project with a dictionary of attributes.

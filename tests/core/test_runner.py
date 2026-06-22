@@ -38,7 +38,8 @@ def mock_rat_main(*args, **kwargs):
 def test_start(mock_process, mock_matlab):
     """Test that `start` creates and starts a process and timer."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner(make_rat_input(), "", True)
+    runner = RATRunner()
+    runner.set_runner_args(make_rat_input(), "", True)
     runner.start()
 
     runner.process.start.assert_called_once()
@@ -50,7 +51,8 @@ def test_start(mock_process, mock_matlab):
 def test_interrupt(mock_process, mock_matlab):
     """Test that `interrupt` kills the process and stops the timer."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner([], "", True)
+    runner = RATRunner()
+    runner.set_runner_args([], "", True)
     runner.interrupt()
 
     runner.process.kill.assert_called_once()
@@ -73,7 +75,8 @@ def test_interrupt(mock_process, mock_matlab):
 def test_check_queue(mock_process, mock_matlab, queue_items):
     """Test that queue data is appropriately assigned."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner([], "", True)
+    runner = RATRunner()
+    runner.set_runner_args([], "", True)
     runner.queue = Queue()
 
     for item in queue_items:
@@ -101,7 +104,8 @@ def test_check_queue(mock_process, mock_matlab, queue_items):
 def test_empty_queue(mock_process, mock_matlab):
     """Test that nothing happens if the queue is empty."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner(make_rat_input(), "", True)
+    runner = RATRunner()
+    runner.set_runner_args(make_rat_input(), "", True)
     runner.check_queue()
 
     assert len(runner.events) == 0
@@ -114,7 +118,9 @@ def test_empty_queue(mock_process, mock_matlab):
 def test_run(display):
     """Test that a run puts the correct items in the queue."""
     queue = Queue()
-    run(queue, make_rat_input(), "", display, None, None)
+    arg_queue = Queue()
+    arg_queue.put((make_rat_input(), "", display))
+    run(queue, arg_queue, None, None)
     expected_display = [
         LogData(20, "Starting RAT"),
         0.2,
@@ -122,6 +128,7 @@ def test_run(display):
         "test message",
         "test message 2",
         0.7,
+        LogData(20, "Creating RAT Results..."),
         LogData(20, "Finished RAT"),
     ]
 
@@ -147,7 +154,9 @@ def test_run_error():
 
     queue = Queue()
     with patch("ratapi.rat_core.RATMain", new=erroring_ratmain):
-        run(queue, make_rat_input(), "", True, None, None)
+        args_queue = Queue()
+        args_queue.put((make_rat_input(), "", True))
+        run(queue, args_queue, None, None)
 
     queue.put(None)
     queue_contents = list(iter(queue.get, None))
@@ -172,7 +181,9 @@ def test_run_examples(example):
     rat_inputs = rat.inputs.make_input(project, rat.Controls())
 
     queue = Queue()
-    run(queue, rat_inputs, "calculate", False, None, None)
+    args_queue = Queue()
+    args_queue.put((rat_inputs, "calculate", False))
+    run(queue, args_queue, None, None)
 
     output = queue.get()
 

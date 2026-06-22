@@ -18,8 +18,9 @@ class RATRunner(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, parent=None):
         super().__init__()
+        self.parent = parent
         self.timer = QtCore.QTimer()
         self.timer.setInterval(1)
         self.timer.timeout.connect(self.check_queue)
@@ -31,7 +32,9 @@ class RATRunner(QtCore.QObject):
         self.rat_inputs = None
         self.procedure = None
         self.display_on = None
+        self.processes_list = []
         self.refresh_process_list()
+        self.process = self.processes_list.pop(0)
         self.updated_problem = None
         self.results = None
         self.error = None
@@ -46,6 +49,8 @@ class RATRunner(QtCore.QObject):
             self.refresh_process_list()
         self.process = self.processes_list.pop(0)
         self.process.start()
+        if self.parent:
+            self.parent.view.terminal_widget.write("Starting RAT Runner process...")
         self.timer.start()
 
     def interrupt(self):
@@ -71,12 +76,18 @@ class RATRunner(QtCore.QObject):
                 self.event_received.emit()
 
     def refresh_process_list(self):
-        self.processes_list = [Process(target=run, args=(
-            self.queue,
-            self.arg_queue,
-            self.matlab_helper.ready_event,
-            self.matlab_helper.engine_output,
-        )) for _ in range(5)]
+        self.processes_list = [
+            Process(
+                target=run,
+                args=(
+                    self.queue,
+                    self.arg_queue,
+                    self.matlab_helper.ready_event,
+                    self.matlab_helper.engine_output,
+                ),
+            )
+            for _ in range(5)
+        ]
 
     def clear_queues(self):
         self.queue.empty()
@@ -91,16 +102,11 @@ def run(queue, arg_queue, engine_ready, engine_output):
     ----------
     queue : Queue
         The interprocess queue for the RATRunner.
-    rat_inputs : tuple
-        The C++ inputs for rat.
-    procedure : str
-        The optimisation procedure.
-    display : bool
-        Whether to display events.
+    arg_queue :
+        A queue of arguments used to initialize the RAT process, passed from the Main Presenter
 
     """
     rat_inputs, procedure, display = arg_queue.get()
-
     problem_definition, cpp_controls = rat_inputs
 
     if display:
@@ -112,17 +118,20 @@ def run(queue, arg_queue, engine_ready, engine_output):
     try:
         engine_future = None
         if any([file["language"] == "matlab" for file in problem_definition.customFiles.files]):
-            if not engine_output:
+            if not engine_output and display:
                 queue.put(LogData(INFO, "Attempting to start Matlab..."))
 
             result = get_matlab_engine(engine_ready, engine_output)
+            if display:
+                queue.put(LogData(INFO, "Got Matlab engine"))
             if isinstance(result, Exception):
                 raise result
             else:
                 engine_future = result
                 engine_future.result().cd(os.getcwd())
-
         problem_definition, output_results, bayes_results = rat.rat_core.RATMain(problem_definition, cpp_controls)
+        if display:
+            queue.put(LogData(INFO, "Creating RAT Results..."))
         results = rat.outputs.make_results(procedure, output_results, bayes_results)
         if engine_future is not None:
             engine_future.result().exit()
