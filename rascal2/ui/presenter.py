@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import warnings
 from typing import Any
 
@@ -34,6 +35,7 @@ class MainWindowPresenter:
         self.runner.finished.connect(self.handle_results)
         self.runner.stopped.connect(self.handle_interrupt)
         self.runner.event_received.connect(self.handle_event)
+        self.runner.start_processes()
 
     def create_project(self, name: str, save_path: str):
         """Create a new RAT project and controls object then initialise UI.
@@ -224,6 +226,7 @@ class MainWindowPresenter:
     def run(self):
         """Run rat using multiprocessing."""
         # reset terminal
+        self.t1 = time.perf_counter()
         self.view.terminal_widget.progress_bar.setVisible(False)
         if SETTINGS.clear_terminal:
             self.view.terminal_widget.clear()
@@ -251,6 +254,7 @@ class MainWindowPresenter:
         self.view.handle_results(self.runner.results)
         self.model.controls.delete_IPC()
         self.runner.clear_queues()
+        print(f"{time.perf_counter() - self.t1} seconds elapsed.")
 
     def handle_interrupt(self):
         """Handle a RAT run being interrupted."""
