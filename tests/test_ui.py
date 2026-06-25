@@ -35,12 +35,17 @@ def test_integration(qt_application, make_main_window):
     _ = qt_application
     window = make_main_window()
     window.show()
+    print("test_integration 1")
 
     window.presenter.create_project("project", ".")
+    print("test_integration 2")
     names = [win.windowTitle() for win in window.mdi.subWindowList()]
+    print("test_integration 3")
     # QMDIArea is first in last out hence the reversed list
     assert names == ["Fitting Controls", "Terminal", "Project", "Plots"]
+    print("test_integration 4")
 
     # Work through the different sections of the UI
 
     window.close()
+    print("test_integration 5")

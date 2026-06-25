@@ -18,8 +18,10 @@ class RATRunner(QtCore.QObject):
     event_received = QtCore.pyqtSignal()
     finished = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
+    go_event = Event()
+    processes_list_go_exit_events = []
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, start_runners_early: bool = True):
         super().__init__()
         self.parent = parent
         self.timer = QtCore.QTimer()
@@ -27,19 +29,20 @@ class RATRunner(QtCore.QObject):
         self.timer.timeout.connect(self.check_queue)
         self.matlab_helper = MatlabHelper()
         self.num_cores = cpu_count()
+        self.start_runners_early = start_runners_early
 
         # this queue handles both event data and results
         self.queue = Queue()
         self.arg_queue = Queue()
         self.go_event = Event()
         self.exit_event = Event()
-        self.processes_list_go_exit_events = [(Event(), Event()) for _ in range(self.num_cores)]
+        # self.processes_list_go_exit_events = [(Event(), Event()) for _ in range(self.num_cores)]
         self.rat_inputs = None
         self.procedure = None
         self.display_on = None
         self.processes_list = []
         self.refresh_process_list()
-        self.process = self.processes_list.pop(0)
+        self.process = None
         self.updated_problem = None
         self.results = None
         self.error = None
@@ -49,17 +52,19 @@ class RATRunner(QtCore.QObject):
         self.arg_queue.put((rat_inputs, procedure, display_on))
 
     def start(self):
+        print("========= START =================")
         """Start the calculation."""
-        if not self.process.is_alive():
-            if not self.processes_list:
-                self.refresh_process_list()
-            self.process = self.processes_list.pop(0)
-            # self.process.start()
-            # if self.parent:
-            #     self.parent.view.terminal_widget.write("Starting RAT Runner process...")
-            self.go_event, self.exit_event = self.processes_list_go_exit_events.pop(0)
-            self.go_event.set()
-            self.timer.start()
+        self.process, (self.go_event, self.exit_event) = self.get_new_process()
+        print(self.process)
+        print(self.go_event)
+        print(self.exit_event)
+        self.go_event.set()
+        self.timer.start()
+
+    def get_new_process(self):
+        if not self.processes_list:
+            self.refresh_process_list()
+        return self.processes_list.pop(0), self.processes_list_go_exit_events.pop(0)
 
     def interrupt(self):
         """Interrupt the running process."""
@@ -88,7 +93,7 @@ class RATRunner(QtCore.QObject):
                 self.event_received.emit()
 
     def refresh_process_list(self):
-
+        self.processes_list_go_exit_events = [(Event(), Event()) for _ in range(self.num_cores)]
         self.processes_list = [
             Process(
                 target=run,
@@ -112,26 +117,33 @@ class RATRunner(QtCore.QObject):
         self.exit_event.clear()
 
     def start_processes(self):
-        for process in self.processes_list:
-            process.start()
+        if self.start_runners_early:
+            for process in self.processes_list:
+                process.start()
 
     def stop_processes(self):
         print("stopping processes")
+        self.clear_queues()
         self.exit_event.set()
         self.go_event.set()
         for process in self.processes_list:
             print(f"{process.is_alive()}")
+            if process.is_alive():
+                process.kill()
+        self.processes_list.clear()
         for go_event, exit_event in self.processes_list_go_exit_events:
             exit_event.set()
             go_event.set()
+        self.processes_list_go_exit_events = []
         for _ in range(self.queue.qsize()):
             print(self.queue.get())
         self.clear_queues()
-        for process in self.processes_list:
-            print(process.name)
-            process.join()
-            print(f"{process.is_alive()}")
-            process.close()
+        # for process in self.processes_list:
+        #     print(process.name)
+        #     if process.is_alive():
+        #         process.join()
+        #         print(f"{process.is_alive()}")
+        #         process.close()
 
 
 def run(queue: Queue, arg_queue: Queue, engine_ready, engine_output, go_event, exit_event):

@@ -226,7 +226,6 @@ class MainWindowPresenter:
     def run(self):
         """Run rat using multiprocessing."""
         # reset terminal
-        self.t1 = time.perf_counter()
         self.view.terminal_widget.progress_bar.setVisible(False)
         if SETTINGS.clear_terminal:
             self.view.terminal_widget.clear()
@@ -254,7 +253,6 @@ class MainWindowPresenter:
         self.view.handle_results(self.runner.results)
         self.model.controls.delete_IPC()
         self.runner.clear_queues()
-        print(f"{time.perf_counter() - self.t1} seconds elapsed.")
 
     def handle_interrupt(self):
         """Handle a RAT run being interrupted."""
