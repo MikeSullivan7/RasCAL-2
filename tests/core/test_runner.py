@@ -34,6 +34,13 @@ def mock_rat_main(*args, **kwargs):
     return 1, 2, 3
 
 
+def close_processes(runner):
+    # Non serialised queue does not have a close attribute so have to mock it out
+    runner.queue.close = MagicMock()
+    runner.arg_queue.close = MagicMock()
+    runner.stop_processes()
+
+
 @patch("rascal2.core.runner.MatlabHelper", autospec=True)
 @patch("rascal2.core.runner.Process")
 @patch("rascal2.core.runner.RATRunner.get_new_process")
@@ -42,16 +49,16 @@ def test_start(mock_process_go_exit, mock_process, mock_matlab):
     mock_matlab.return_value = MagicMock()
     mock_go = MagicMock()
     mock_process_go_exit.return_value = MagicMock(), (mock_go, MagicMock())
-    runner = RATRunner(start_runners_early=False)
+    runner = RATRunner(start_runners_early=False, num_cores=1)
     runner.process = MagicMock()
-    runner.num_cores = MagicMock(return_value=1)
+    runner.get_runner_matlab_engine = MagicMock()
     runner.set_runner_args(make_rat_input(), "", True)
     runner.start()
 
     mock_go.set.assert_called_once()
     assert runner.timer.isActive()
 
-    runner.stop_processes()
+    close_processes(runner)
 
 
 @patch("rascal2.core.runner.MatlabHelper", autospec=True)
@@ -59,7 +66,7 @@ def test_start(mock_process_go_exit, mock_process, mock_matlab):
 def test_interrupt(mock_process, mock_matlab):
     """Test that `interrupt` kills the process and stops the timer."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner(start_runners_early=False)
+    runner = RATRunner(start_runners_early=False, num_cores=1)
     runner.process = MagicMock()
     runner.set_runner_args([], "", True)
     runner.interrupt()
@@ -67,7 +74,7 @@ def test_interrupt(mock_process, mock_matlab):
     runner.process.kill.assert_called_once()
     assert not runner.timer.isActive()
 
-    runner.stop_processes()
+    close_processes(runner)
 
 
 @pytest.mark.parametrize(
@@ -86,8 +93,9 @@ def test_interrupt(mock_process, mock_matlab):
 def test_check_queue(mock_process, mock_matlab, queue_items):
     """Test that queue data is appropriately assigned."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner(start_runners_early=False)
+    runner = RATRunner(start_runners_early=False, num_cores=1)
     runner.process = MagicMock()
+    runner.get_runner_matlab_engine = MagicMock()
     runner.set_runner_args([], "", True)
     runner.queue = Queue()
 
@@ -110,7 +118,7 @@ def test_check_queue(mock_process, mock_matlab, queue_items):
         assert isinstance(runner.error, ValueError)
         assert str(runner.error) == "Runner error!"
 
-    runner.stop_processes()
+    close_processes(runner)
 
 
 @patch("rascal2.core.runner.MatlabHelper", autospec=True)
@@ -118,15 +126,16 @@ def test_check_queue(mock_process, mock_matlab, queue_items):
 def test_empty_queue(mock_process, mock_matlab):
     """Test that nothing happens if the queue is empty."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner(start_runners_early=False)
+    runner = RATRunner(start_runners_early=False, num_cores=1)
     runner.process = MagicMock()
     runner.set_runner_args(make_rat_input(), "", True)
+
     runner.check_queue()
 
     assert len(runner.events) == 0
     assert runner.results is None
 
-    runner.stop_processes()
+    close_processes(runner)
 
 
 @pytest.mark.parametrize("display", [True, False])
@@ -139,7 +148,7 @@ def test_run(display):
     arg_queue.put((make_rat_input(), "", display))
     go_event, exit_event = (Event(), Event())
     go_event.set()
-    run(queue, arg_queue, None, None, go_event, exit_event)
+    run(queue, arg_queue, go_event, exit_event)
 
     expected_display = [
         LogData(20, "Starting RAT"),
@@ -178,7 +187,7 @@ def test_run_error():
         args_queue.put((make_rat_input(), "", True))
         go_event, exit_event = (Event(), Event())
         go_event.set()
-        run(queue, args_queue, None, None, go_event, exit_event)
+        run(queue, args_queue, go_event, exit_event)
 
     queue.put(None)
     queue_contents = list(iter(queue.get, None))
@@ -207,7 +216,7 @@ def test_run_examples(example):
     args_queue.put((rat_inputs, "calculate", False))
     go_event, exit_event = (Event(), Event())
     go_event.set()
-    run(queue, args_queue, None, None, go_event, exit_event)
+    run(queue, args_queue, go_event, exit_event)
 
     output = queue.get()
 
