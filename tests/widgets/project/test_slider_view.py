@@ -52,7 +52,8 @@ def draft_project():
     return draft
 
 
-def test_no_sliders_creation():
+@patch("rascal2.ui.presenter.RATRunner", autospec=True, return_value=MagicMock())
+def test_no_sliders_creation(mock_runner):
     """Slider view should show warning when there is no fitted parameter."""
     mw = MainWindowView()
     draft = create_draft_project(ratapi.Project())
@@ -64,7 +65,8 @@ def test_no_sliders_creation():
     assert label.text().startswith("There are no fitted parameters")
 
 
-def test_sliders_creation(draft_project):
+@patch("rascal2.ui.presenter.RATRunner", autospec=True, return_value=MagicMock())
+def test_sliders_creation(mock_runner, draft_project):
     """Sliders should be created for fitted parameter only."""
     mw = MainWindowView()
     slider_view = SliderViewWidget(draft_project, mw)
@@ -81,7 +83,8 @@ def test_sliders_creation(draft_project):
     assert draft_project["parameters"][0].name not in slider_view._sliders
 
 
-def test_accept_and_cancel_slider_buttons():
+@patch("rascal2.ui.presenter.RATRunner", autospec=True, return_value=MagicMock())
+def test_accept_and_cancel_slider_buttons(mock_runner):
     mw = MainWindowView()
     draft = create_draft_project(ratapi.Project())
     mw.toggle_sliders = MagicMock()

@@ -1,6 +1,5 @@
 import os
 import re
-import time
 import warnings
 from typing import Any
 
@@ -17,6 +16,8 @@ from rascal2.settings import update_recent_projects
 
 from .model import MainWindowModel
 
+START_PROCESSES = bool(os.getenv("START_PROCESSES", "True"))
+
 
 class MainWindowPresenter:
     """Facilitates interaction between View and Model.
@@ -31,7 +32,7 @@ class MainWindowPresenter:
         self.view = view
         self.model = MainWindowModel()
         self.worker = None
-        self.runner = RATRunner(self)
+        self.runner = RATRunner(self, start_runners_early=START_PROCESSES)
         self.runner.finished.connect(self.handle_results)
         self.runner.stopped.connect(self.handle_interrupt)
         self.runner.event_received.connect(self.handle_event)

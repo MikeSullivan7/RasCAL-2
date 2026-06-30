@@ -58,6 +58,8 @@ class RATRunner(QtCore.QObject):
         if self.engine_future is None:
             self.get_runner_matlab_engine()
         self.go_event.set()
+        if not self.process.is_alive():
+            self.process.start()
         self.timer.start()
 
     def get_new_process(self):
@@ -76,6 +78,7 @@ class RATRunner(QtCore.QObject):
                 args=(matlab_queue, engine_output, engine_ready, self.display_on),
             )
             get_runner_matlab_engine_process.start()
+            get_runner_matlab_engine_process.join()
             self.engine_future = self.filter_queue(matlab_queue)
 
     def interrupt(self):
@@ -147,11 +150,11 @@ class RATRunner(QtCore.QObject):
         self.processes_list.clear()
         self.clear_queues()
         self.processes_list_go_exit_events.clear()
-        print(f"{self.queue=}")
         self.queue.close()
         self.arg_queue.close()
         if self.engine_future is not None:
             self.engine_future.result().exit()
+        self.matlab_helper.close_event.set()
 
 
 def run(queue: Queue, arg_queue: Queue, go_event, exit_event):

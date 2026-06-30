@@ -53,9 +53,9 @@ def presenter():
     with (
         patch("rascal2.ui.presenter.LOGGER", autospec=True) as mock_log,
         patch("rascal2.ui.model.os.chdir", autospec=True),
+        patch("rascal2.ui.presenter.RATRunner", autospec=True, return_value=MagicMock()),
     ):
         pr = MainWindowPresenter(MockWindowView())
-        pr.runner = MagicMock()
         pr.model.controls = Controls()
         pr.model.project = MagicMock()
         pr.model.project.name = "test_name"

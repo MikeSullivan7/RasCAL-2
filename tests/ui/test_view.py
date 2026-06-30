@@ -33,6 +33,7 @@ def test_view():
     with (
         patch("rascal2.widgets.plot.FigureCanvasQTAgg", return_value=MockFigureCanvas()),
         patch("rascal2.widgets.plot.NavigationToolbar2QT", return_value=MockNavigationToolbar()),
+        patch("rascal2.ui.presenter.RATRunner", autospec=True, return_value=MagicMock()),
     ):
         yield MainWindowView()
 
@@ -116,7 +117,8 @@ def test_set_enabled(test_view):
 
 @patch("PyQt6.QtWidgets.QFileDialog.getExistingDirectory")
 @patch("rascal2.ui.view.get_global_settings")
-def test_get_project_folder(mock_get_global, mock_get_dir: MagicMock):
+@patch("rascal2.ui.presenter.RATRunner", autospec=True, return_value=MagicMock())
+def test_get_project_folder(mock_runner, mock_get_global, mock_get_dir: MagicMock):
     """Test that getting a specified folder works as expected."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         ini_file = Path(tmp_dir) / "settings.ini"
@@ -206,7 +208,8 @@ def test_help_menu_actions_present(test_view, submenu_name, action_names_and_lay
         assert action.text() == name
 
 
-def test_toggle_slider():
+@patch("rascal2.ui.presenter.RATRunner", autospec=True, return_value=MagicMock())
+def test_toggle_slider(mock_runner):
     mw = MainWindowView()
     with patch.object(mw, "project_widget") as project_mock:
         show_text = mw.toggle_slider_action.property("show_text")
