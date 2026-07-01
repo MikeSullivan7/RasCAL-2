@@ -29,7 +29,7 @@ jobs:
           conda init powershell
           conda activate rascal2
           conda install -c nsis nsis=3.* accesscontrol
-          python -m pip install --no-build-isolation 'D:\hostedtoolcache\windows\MATLAB\extern\engines\python'
+          python -m pip install --no-build-isolation matlabengine==9.14.*
           python packaging/build_exe.py
           if ($env:GITHUB_REF_NAME -eq "main") {
             makensis /DNIGHTLY packaging/windows/build_installer.nsi
@@ -94,13 +94,19 @@ jobs:
           conda activate rascal2
           if [ ${{ matrix.platform }} == "macos-14" ]; then
             ARCH="arm64"
-            export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/Users/runner/hostedtoolcache/MATLAB/2023.2.999/arm64/MATLAB.app/bin/maca64
-            python -m pip install --no-build-isolation /Users/runner/hostedtoolcache/MATLAB/2023.2.999/arm64/MATLAB.app/extern/engines/python
+            MATLAB_DIR="/Users/runner/hostedtoolcache/MATLAB/2023.2.999/arm64/MATLAB.app/bin/maca64"
+            ENGINE_DIR="/Users/runner/hostedtoolcache/MATLAB/2023.2.999/arm64/MATLAB.app/extern/engines/python"
+          
           else
             ARCH="x64"
-            export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/Users/runner/hostedtoolcache/MATLAB/2023.2.999/x64/MATLAB.app/bin/maci64
-            python -m pip install --no-build-isolation /Users/runner/hostedtoolcache/MATLAB/2023.2.999/x64/MATLAB.app/extern/engines/python
+            MATLAB_DIR="/Users/runner/hostedtoolcache/MATLAB/2023.2.999/x64/MATLAB.app/bin/maci64"
+            ENGINE_DIR="/Users/runner/hostedtoolcache/MATLAB/2023.2.999/x64/MATLAB.app/extern/engines/python"
           fi
+          if [ ! -d "${MATLAB_DIR}" ]; then
+            echo "MATLAB directory not found!"
+          fi
+          export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$MATLAB_DIR
+          python -m pip install --no-build-isolation $ENGINE_DIR
           python packaging/build_exe.py
           chmod 777 packaging/bundle/rascal.app/Contents/Resources/matlab/engine/_arch.txt
           cd packaging/macos/

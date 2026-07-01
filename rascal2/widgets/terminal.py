@@ -38,6 +38,8 @@ class TerminalWidget(QtWidgets.QWidget):
         font.setStyleHint(font.StyleHint.Monospace)
         self.text_area.setFont(font)
         self.text_area.setLineWrapMode(self.text_area.LineWrapMode.NoWrap)
+        self.text_format = QtGui.QTextCharFormat(self.text_area.currentCharFormat())
+        self.text_format.setFontWeight(QtGui.QFont.Weight.Bold)
 
         widget_layout = QtWidgets.QVBoxLayout()
 
@@ -72,6 +74,7 @@ class TerminalWidget(QtWidgets.QWidget):
             The text to append.
 
         """
+        self.text_area.setCurrentCharFormat(self.text_format)
         self.text_area.appendPlainText(text.rstrip())
 
     def write_html(self, text: str):
@@ -98,8 +101,7 @@ class TerminalWidget(QtWidgets.QWidget):
 
     def clear(self):
         """Clear the text in the terminal."""
-        self.write_html('<div style="white-space: pre-line;"><b>" "</b></div>')
-        self.text_area.moveCursor(QtGui.QTextCursor.MoveOperation.Start, QtGui.QTextCursor.MoveMode.MoveAnchor)
+        self.text_area.setCurrentCharFormat(self.text_format)
         self.text_area.setPlainText("")
         self.update()
 

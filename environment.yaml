@@ -6,8 +6,8 @@ dependencies:
   - python=3.10
   - pip
   - llvm-openmp
-  - expat=2.7.3
   - openssl=3.6.2
+  - expat=2.5.0
   - pip:
     - -r requirements.txt
     - -r requirements-dev.txt
