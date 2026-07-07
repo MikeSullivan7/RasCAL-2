@@ -20,9 +20,9 @@ def global_setting():
 
 
 @pytest.fixture(autouse=True)
-@patch("rascal2.core.runner.cpu_count")
-def fix_cpu_count(cpu_count):
-    cpu_count.return_value = 1
+@patch("rascal2.core.runner.NUMBER_PROCESSES")
+def fix_num_processes(num_processes):
+    num_processes.return_value = 1
     yield
 
 

@@ -3,12 +3,15 @@
 import os
 from dataclasses import dataclass
 from logging import INFO
-from multiprocessing import Event, Process, Queue, cpu_count
+from multiprocessing import Event, Process, Queue
 
 import ratapi as rat
 from PyQt6 import QtCore
 
 from rascal2.config import MatlabHelper, get_matlab_engine
+
+NUMBER_PROCESSES = 5
+LOOP_PROCESS = True
 
 
 class RATRunner(QtCore.QObject):
@@ -20,14 +23,14 @@ class RATRunner(QtCore.QObject):
     go_event = Event()
     processes_list_go_exit_events = []
 
-    def __init__(self, parent=None, start_runners_early: bool = True, num_cores: int = cpu_count()):
+    def __init__(self, parent=None, start_runners_early: bool = True, num_processes: int = NUMBER_PROCESSES):
         super().__init__()
         self.parent = parent
         self.timer = QtCore.QTimer()
         self.timer.setInterval(1)
         self.timer.timeout.connect(self.check_queue)
         self.matlab_helper = MatlabHelper()
-        self.num_cores = num_cores
+        self.num_processes = num_processes
         self.start_runners_early = start_runners_early
 
         # this queue handles both event data and results
@@ -54,7 +57,8 @@ class RATRunner(QtCore.QObject):
 
     def start(self):
         """Start the calculation."""
-        self.process, (self.go_event, self.exit_event) = self.get_new_process()
+        if not self.process:
+            self.process, (self.go_event, self.exit_event) = self.get_new_process()
         if self.engine_future is None:
             self.get_runner_matlab_engine()
         self.go_event.set()
@@ -83,10 +87,16 @@ class RATRunner(QtCore.QObject):
 
     def interrupt(self):
         """Interrupt the running process."""
+        print(f"{self.process=}")
         self.timer.stop()
         self.process.kill()
         self.stopped.emit()
         self.go_event.clear()
+        self.clear_process()
+
+    def clear_process(self):
+        """Clear the current process."""
+        self.process = None
 
     def check_queue(self):
         """Check for new data in the queue."""
@@ -112,7 +122,7 @@ class RATRunner(QtCore.QObject):
                 self.event_received.emit()
 
     def refresh_process_list(self):
-        self.processes_list_go_exit_events = [(Event(), Event()) for _ in range(self.num_cores)]
+        self.processes_list_go_exit_events = [(Event(), Event()) for _ in range(self.num_processes)]
         self.processes_list = [
             Process(
                 target=run,
@@ -123,7 +133,7 @@ class RATRunner(QtCore.QObject):
                     self.processes_list_go_exit_events[ind][1],
                 ),
             )
-            for ind in range(self.num_cores)
+            for ind in range(self.num_processes)
         ]
 
     def clear_queues(self):
@@ -147,6 +157,7 @@ class RATRunner(QtCore.QObject):
         for process in self.processes_list:
             if process.is_alive():
                 process.kill()
+        self.process = None
         self.processes_list.clear()
         self.clear_queues()
         self.processes_list_go_exit_events.clear()
@@ -168,34 +179,37 @@ def run(queue: Queue, arg_queue: Queue, go_event, exit_event):
         A queue of arguments used to initialize the RAT process, passed from the Main Presenter
 
     """
-    go_event.wait()
-    if exit_event.is_set():
-        queue.put(LogData(INFO, "exit_event triggers"))
-        return
-    rat_inputs, procedure, display, working_dir = arg_queue.get()
-    os.chdir(working_dir)
-    problem_definition, cpp_controls = rat_inputs
+    while True:
+        go_event.wait()
+        if exit_event.is_set():
+            return
+        rat_inputs, procedure, display, working_dir = arg_queue.get()
+        os.chdir(working_dir)
+        problem_definition, cpp_controls = rat_inputs
 
-    if display:
-        rat.events.register(rat.events.EventTypes.Message, queue.put)
-        rat.events.register(rat.events.EventTypes.Progress, queue.put)
-        rat.events.register(rat.events.EventTypes.Plot, queue.put)
-        queue.put(LogData(INFO, "Starting RAT"))
-
-    try:
-        problem_definition, output_results, bayes_results = rat.rat_core.RATMain(problem_definition, cpp_controls)
         if display:
-            queue.put(LogData(INFO, "Creating RAT Results..."))
-        results = rat.outputs.make_results(procedure, output_results, bayes_results)
-    except Exception as err:
-        queue.put(err)
-        return
+            rat.events.register(rat.events.EventTypes.Message, queue.put)
+            rat.events.register(rat.events.EventTypes.Progress, queue.put)
+            rat.events.register(rat.events.EventTypes.Plot, queue.put)
+            queue.put(LogData(INFO, "Starting RAT"))
 
-    if display:
-        queue.put(LogData(INFO, "Finished RAT"))
-        rat.events.clear()
+        try:
+            problem_definition, output_results, bayes_results = rat.rat_core.RATMain(problem_definition, cpp_controls)
+            if display:
+                queue.put(LogData(INFO, "Creating RAT Results..."))
+            results = rat.outputs.make_results(procedure, output_results, bayes_results)
+        except Exception as err:
+            queue.put(err)
+            return
 
-    queue.put((problem_definition, results))
+        if display:
+            queue.put(LogData(INFO, "Finished RAT"))
+            rat.events.clear()
+
+        queue.put((problem_definition, results))
+        go_event.clear()
+        if not LOOP_PROCESS:
+            break
 
 
 def run_matlab_init_engine(queue, engine_output, engine_ready, display_on):

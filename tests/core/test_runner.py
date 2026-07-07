@@ -50,8 +50,8 @@ def test_start(mock_process_go_exit, mock_process, mock_matlab):
     mock_matlab.return_value = MagicMock()
     mock_go = MagicMock()
     mock_process_go_exit.return_value = MagicMock(), (mock_go, MagicMock())
-    runner = RATRunner(start_runners_early=False, num_cores=1)
-    runner.process = MagicMock()
+    runner = RATRunner(start_runners_early=False, num_processes=1)
+    runner.process = None
     runner.get_runner_matlab_engine = MagicMock()
     runner.set_runner_args(make_rat_input(), "", True, os.getcwd())
     runner.start()
@@ -67,8 +67,9 @@ def test_start(mock_process_go_exit, mock_process, mock_matlab):
 def test_interrupt(mock_process, mock_matlab):
     """Test that `interrupt` kills the process and stops the timer."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner(start_runners_early=False, num_cores=1)
+    runner = RATRunner(start_runners_early=False, num_processes=1)
     runner.process = MagicMock()
+    runner.clear_process = MagicMock()
     runner.set_runner_args([], "", True, os.getcwd())
     runner.interrupt()
 
@@ -94,7 +95,7 @@ def test_interrupt(mock_process, mock_matlab):
 def test_check_queue(mock_process, mock_matlab, queue_items):
     """Test that queue data is appropriately assigned."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner(start_runners_early=False, num_cores=1)
+    runner = RATRunner(start_runners_early=False, num_processes=1)
     runner.process = MagicMock()
     runner.get_runner_matlab_engine = MagicMock()
     runner.set_runner_args([], "", True, os.getcwd())
@@ -127,7 +128,7 @@ def test_check_queue(mock_process, mock_matlab, queue_items):
 def test_empty_queue(mock_process, mock_matlab):
     """Test that nothing happens if the queue is empty."""
     mock_matlab.return_value = MagicMock()
-    runner = RATRunner(start_runners_early=False, num_cores=1)
+    runner = RATRunner(start_runners_early=False, num_processes=1)
     runner.process = MagicMock()
     runner.set_runner_args(make_rat_input(), "", True, os.getcwd())
 
@@ -142,6 +143,7 @@ def test_empty_queue(mock_process, mock_matlab):
 @pytest.mark.parametrize("display", [True, False])
 @patch("ratapi.rat_core.RATMain", new=mock_rat_main)
 @patch("ratapi.outputs.make_results", new=MagicMock(spec=rat.outputs.Results))
+@patch("rascal2.core.runner.LOOP_PROCESS", new=False)
 def test_run(display):
     """Test that a run puts the correct items in the queue."""
     queue = Queue()
@@ -200,6 +202,7 @@ def test_run_error():
 
 
 @pytest.mark.parametrize("example", rat.examples.__all__)
+@patch("rascal2.core.runner.LOOP_PROCESS", new=False)
 def test_run_examples(example):
     """Test that the run function runs without an error on the ratapi example projects."""
     # skip convert rascal example
