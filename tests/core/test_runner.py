@@ -226,3 +226,23 @@ def test_run_examples(example):
 
     assert isinstance(output[0], rat.rat_core.ProblemDefinition)
     assert isinstance(output[1], rat.outputs.Results)
+
+
+@patch("rascal2.core.runner.MatlabHelper", autospec=True)
+@patch("rascal2.core.runner.Process")
+@patch("rascal2.core.runner.RATRunner.get_new_process")
+def test_start_reuses_process(mock_process_go_exit, mock_process, mock_matlab):
+    """Test that when running `start` a second time, it will reuse the previous process."""
+    mock_matlab.return_value = MagicMock()
+    mock_go = MagicMock()
+    mock_process_go_exit.return_value = MagicMock(), (mock_go, MagicMock())
+    runner = RATRunner(start_runners_early=False, num_processes=1)
+    runner.process = None
+    runner.get_runner_matlab_engine = MagicMock()
+    runner.get_new_process = MagicMock(return_value=(MagicMock(), (MagicMock(), MagicMock())))
+    runner.set_runner_args(make_rat_input(), "", True, os.getcwd())
+    runner.start()
+    runner.get_new_process.assert_called_once()
+    runner.start()
+    runner.get_new_process.assert_called_once()
+    close_processes(runner)
