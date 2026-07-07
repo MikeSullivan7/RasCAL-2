@@ -87,7 +87,6 @@ class RATRunner(QtCore.QObject):
 
     def interrupt(self):
         """Interrupt the running process."""
-        print(f"{self.process=}")
         self.timer.stop()
         self.process.kill()
         self.stopped.emit()
