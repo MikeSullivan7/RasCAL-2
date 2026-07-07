@@ -36,6 +36,7 @@ def mock_rat_main(*args, **kwargs):
 
 def close_processes(runner):
     # Non serialised queue does not have a close attribute so have to mock it out
+    runner.process.join()
     runner.queue.close = MagicMock()
     runner.arg_queue.close = MagicMock()
     runner.stop_processes()
@@ -52,7 +53,7 @@ def test_start(mock_process_go_exit, mock_process, mock_matlab):
     runner = RATRunner(start_runners_early=False, num_cores=1)
     runner.process = MagicMock()
     runner.get_runner_matlab_engine = MagicMock()
-    runner.set_runner_args(make_rat_input(), "", True)
+    runner.set_runner_args(make_rat_input(), "", True, os.getcwd())
     runner.start()
 
     mock_go.set.assert_called_once()
@@ -68,7 +69,7 @@ def test_interrupt(mock_process, mock_matlab):
     mock_matlab.return_value = MagicMock()
     runner = RATRunner(start_runners_early=False, num_cores=1)
     runner.process = MagicMock()
-    runner.set_runner_args([], "", True)
+    runner.set_runner_args([], "", True, os.getcwd())
     runner.interrupt()
 
     runner.process.kill.assert_called_once()
@@ -96,7 +97,7 @@ def test_check_queue(mock_process, mock_matlab, queue_items):
     runner = RATRunner(start_runners_early=False, num_cores=1)
     runner.process = MagicMock()
     runner.get_runner_matlab_engine = MagicMock()
-    runner.set_runner_args([], "", True)
+    runner.set_runner_args([], "", True, os.getcwd())
     runner.queue = Queue()
 
     for item in queue_items:
@@ -128,7 +129,7 @@ def test_empty_queue(mock_process, mock_matlab):
     mock_matlab.return_value = MagicMock()
     runner = RATRunner(start_runners_early=False, num_cores=1)
     runner.process = MagicMock()
-    runner.set_runner_args(make_rat_input(), "", True)
+    runner.set_runner_args(make_rat_input(), "", True, os.getcwd())
 
     runner.check_queue()
 
@@ -145,7 +146,7 @@ def test_run(display):
     """Test that a run puts the correct items in the queue."""
     queue = Queue()
     arg_queue = Queue()
-    arg_queue.put((make_rat_input(), "", display))
+    arg_queue.put((make_rat_input(), "", display, os.getcwd()))
     go_event, exit_event = (Event(), Event())
     go_event.set()
     run(queue, arg_queue, go_event, exit_event)
@@ -184,7 +185,7 @@ def test_run_error():
     queue = Queue()
     with patch("ratapi.rat_core.RATMain", new=erroring_ratmain):
         args_queue = Queue()
-        args_queue.put((make_rat_input(), "", True))
+        args_queue.put((make_rat_input(), "", True, os.getcwd()))
         go_event, exit_event = (Event(), Event())
         go_event.set()
         run(queue, args_queue, go_event, exit_event)
@@ -213,7 +214,7 @@ def test_run_examples(example):
 
     queue = Queue()
     args_queue = Queue()
-    args_queue.put((rat_inputs, "calculate", False))
+    args_queue.put((rat_inputs, "calculate", False, os.getcwd()))
     go_event, exit_event = (Event(), Event())
     go_event.set()
     run(queue, args_queue, go_event, exit_event)

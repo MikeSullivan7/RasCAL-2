@@ -47,8 +47,8 @@ class RATRunner(QtCore.QObject):
         self.events = []
         self.engine_future = None
 
-    def set_runner_args(self, rat_inputs, procedure, display_on: bool):
-        self.arg_queue.put((rat_inputs, procedure, display_on))
+    def set_runner_args(self, rat_inputs, procedure, display_on: bool, working_dir: str):
+        self.arg_queue.put((rat_inputs, procedure, display_on, working_dir))
         self.rat_inputs = rat_inputs
         self.display_on = display_on
 
@@ -172,7 +172,8 @@ def run(queue: Queue, arg_queue: Queue, go_event, exit_event):
     if exit_event.is_set():
         queue.put(LogData(INFO, "exit_event triggers"))
         return
-    rat_inputs, procedure, display = arg_queue.get()
+    rat_inputs, procedure, display, working_dir = arg_queue.get()
+    os.chdir(working_dir)
     problem_definition, cpp_controls = rat_inputs
 
     if display:

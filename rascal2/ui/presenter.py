@@ -1,6 +1,7 @@
 import os
 import re
 import warnings
+from multiprocessing import Queue
 from typing import Any
 
 import ratapi as rat
@@ -235,9 +236,10 @@ class MainWindowPresenter:
         self.view.plot_widget.bayes_plots_button.setVisible(False)
 
         self.model.controls.initialise_IPC()
+        working_dir = os.getcwd()
         rat_inputs = rat.inputs.make_input(self.model.project, self.model.controls)
         display_on = self.model.controls.display != rat.utils.enums.Display.Off
-        self.runner.set_runner_args(rat_inputs, self.model.controls.procedure, display_on)
+        self.runner.set_runner_args(rat_inputs, self.model.controls.procedure, display_on, working_dir)
         self.view.terminal_widget.write("Initializing RAT Process...")
         self.runner.start()
 
