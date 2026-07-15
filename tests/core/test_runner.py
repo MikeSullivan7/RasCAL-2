@@ -148,11 +148,15 @@ def test_empty_queue(mock_process, mock_matlab):
 def test_run(display):
     """Test that a run puts the correct items in the queue."""
     queue = Queue()
-    arg_queue = Queue()
-    arg_queue.put((make_rat_input(), "", display, os.getcwd()))
+    engine_ready = Queue()
+    engine_output = Queue()
+    args_queue = Queue()
+    args_queue.put((make_rat_input(), "", display, os.getcwd()))
     go_event, exit_event = (Event(), Event())
     go_event.set()
-    run(queue, arg_queue, go_event, exit_event)
+    go_event.clear = lambda: exit_event.set()
+    with patch("rascal2.core.runner.init_matlab_engine"), patch("rascal2.core.runner.stop_matlab_engine"):
+        run(queue, args_queue, go_event, exit_event, engine_ready, engine_output)
 
     expected_display = [
         LogData(20, "Starting RAT"),
@@ -161,7 +165,6 @@ def test_run(display):
         "test message",
         "test message 2",
         0.7,
-        LogData(20, "Creating RAT Results..."),
         LogData(20, "Finished RAT"),
     ]
 
@@ -185,13 +188,20 @@ def test_run_error():
         """RATMain mock that raises an error."""
         raise ValueError("RAT Main Error!")
 
-    queue = Queue()
-    with patch("ratapi.rat_core.RATMain", new=erroring_ratmain):
+    with (
+        patch("ratapi.rat_core.RATMain", new=erroring_ratmain),
+        patch("rascal2.core.runner.init_matlab_engine"),
+        patch("rascal2.core.runner.stop_matlab_engine"),
+    ):
+        queue = Queue()
+        engine_ready = Queue()
+        engine_output = Queue()
         args_queue = Queue()
         args_queue.put((make_rat_input(), "", True, os.getcwd()))
         go_event, exit_event = (Event(), Event())
         go_event.set()
-        run(queue, args_queue, go_event, exit_event)
+        go_event.clear = lambda: exit_event.set()
+        run(queue, args_queue, go_event, exit_event, engine_ready, engine_output)
 
     queue.put(None)
     queue_contents = list(iter(queue.get, None))
@@ -219,9 +229,13 @@ def test_run_examples(example):
     queue = Queue()
     args_queue = Queue()
     args_queue.put((rat_inputs, "calculate", False, os.getcwd()))
+    engine_ready = Queue()
+    engine_output = Queue()
     go_event, exit_event = (Event(), Event())
     go_event.set()
-    run(queue, args_queue, go_event, exit_event)
+    go_event.clear = lambda: exit_event.set()
+    with patch("rascal2.core.runner.init_matlab_engine"), patch("rascal2.core.runner.stop_matlab_engine"):
+        run(queue, args_queue, go_event, exit_event, engine_ready, engine_output)
 
     output = queue.get()
 

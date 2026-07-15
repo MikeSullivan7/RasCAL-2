@@ -29,7 +29,6 @@ class RATRunner(QtCore.QObject):
         self.timer = QtCore.QTimer()
         self.timer.setInterval(1)
         self.timer.timeout.connect(self.check_queue)
-        self.matlab_helper = MatlabHelper()
         self.num_processes = num_processes
         self.start_runners_early = start_runners_early
 
@@ -48,7 +47,6 @@ class RATRunner(QtCore.QObject):
         self.results = None
         self.error = None
         self.events = []
-        self.engine_future = None
 
     def set_runner_args(self, rat_inputs, procedure, display_on: bool, working_dir: str):
         self.arg_queue.put((rat_inputs, procedure, display_on, working_dir))
@@ -59,8 +57,6 @@ class RATRunner(QtCore.QObject):
         """Start the calculation."""
         if not self.process:
             self.process, (self.go_event, self.exit_event) = self.get_new_process()
-        if self.engine_future is None:
-            self.get_runner_matlab_engine()
         self.go_event.set()
         if not self.process.is_alive():
             self.process.start()
@@ -70,20 +66,6 @@ class RATRunner(QtCore.QObject):
         if not self.processes_list:
             self.refresh_process_list()
         return self.processes_list.pop(0), self.processes_list_go_exit_events.pop(0)
-
-    def get_runner_matlab_engine(self):
-        problem_definition, cpp_controls = self.rat_inputs
-        if any([file["language"] == "matlab" for file in problem_definition.customFiles.files]):
-            engine_ready = (self.matlab_helper.ready_event,)
-            engine_output = self.matlab_helper.engine_output
-            matlab_queue = Queue()
-            get_runner_matlab_engine_process = Process(
-                target=run_matlab_init_engine,
-                args=(matlab_queue, engine_output, engine_ready, self.display_on),
-            )
-            get_runner_matlab_engine_process.start()
-            get_runner_matlab_engine_process.join()
-            self.engine_future = self.filter_queue(matlab_queue)
 
     def interrupt(self):
         """Interrupt the running process."""
@@ -101,11 +83,8 @@ class RATRunner(QtCore.QObject):
         """Check for new data in the queue."""
         if not self.process.is_alive():
             self.timer.stop()
-        self.filter_queue(self.queue)
-
-    def filter_queue(self, queue: Queue):
-        queue.put(None)
-        for item in iter(queue.get, None):
+        self.queue.put(None)
+        for item in iter(self.queue.get, None):
             if isinstance(item, tuple):
                 self.updated_problem, self.results = item
                 self.go_event.clear()
@@ -122,6 +101,7 @@ class RATRunner(QtCore.QObject):
 
     def refresh_process_list(self):
         self.processes_list_go_exit_events = [(Event(), Event()) for _ in range(self.num_processes)]
+        matlab_helper = MatlabHelper()
         self.processes_list = [
             Process(
                 target=run,
@@ -130,6 +110,8 @@ class RATRunner(QtCore.QObject):
                     self.arg_queue,
                     self.processes_list_go_exit_events[ind][0],
                     self.processes_list_go_exit_events[ind][1],
+                    matlab_helper.ready_event,
+                    matlab_helper.engine_output,
                 ),
             )
             for ind in range(self.num_processes)
@@ -162,12 +144,31 @@ class RATRunner(QtCore.QObject):
         self.processes_list_go_exit_events.clear()
         self.queue.close()
         self.arg_queue.close()
-        if self.engine_future is not None:
-            self.engine_future.result().exit()
-        self.matlab_helper.close_event.set()
 
 
-def run(queue: Queue, arg_queue: Queue, go_event, exit_event):
+def init_matlab_engine(problem_definition, engine_ready, engine_output, queue):
+    """Initialise the Matlab engine if using a Matlab custom file and returns the engine future if available."""
+    engine_future = rat.wrappers.MatlabWrapper.loader
+    if engine_future is None and any([file["language"] == "matlab" for file in problem_definition.customFiles.files]):
+        if not engine_output:
+            queue.put(LogData(INFO, "Attempting to start Matlab..."))
+
+        result = get_matlab_engine(engine_ready, engine_output)
+        if isinstance(result, Exception):
+            raise result
+        else:
+            engine_future = result
+            engine_future.result().cd(os.getcwd())
+    return engine_future
+
+
+def stop_matlab_engine(engine_future):
+    """Exit the Matlab engine future if present."""
+    if engine_future is not None:
+        engine_future.result().exit()
+
+
+def run(queue: Queue, arg_queue: Queue, go_event, exit_event, engine_ready, engine_output):
     """Run RAT and put the result into the queue.
 
     Parameters
@@ -178,9 +179,11 @@ def run(queue: Queue, arg_queue: Queue, go_event, exit_event):
         A queue of arguments used to initialize the RAT process, passed from the Main Presenter
 
     """
+    engine_future = None
     while True:
         go_event.wait()
         if exit_event.is_set():
+            stop_matlab_engine(engine_future)
             return
         rat_inputs, procedure, display, working_dir = arg_queue.get()
         os.chdir(working_dir)
@@ -193,13 +196,13 @@ def run(queue: Queue, arg_queue: Queue, go_event, exit_event):
             queue.put(LogData(INFO, "Starting RAT"))
 
         try:
+            engine_future = init_matlab_engine(problem_definition, engine_ready, engine_output, queue)
             problem_definition, output_results, bayes_results = rat.rat_core.RATMain(problem_definition, cpp_controls)
-            if display:
-                queue.put(LogData(INFO, "Creating RAT Results..."))
             results = rat.outputs.make_results(procedure, output_results, bayes_results)
         except Exception as err:
             queue.put(err)
-            return
+            go_event.clear()
+            continue
 
         if display:
             queue.put(LogData(INFO, "Finished RAT"))
@@ -207,29 +210,6 @@ def run(queue: Queue, arg_queue: Queue, go_event, exit_event):
 
         queue.put((problem_definition, results))
         go_event.clear()
-        if not LOOP_PROCESS:
-            break
-
-
-def run_matlab_init_engine(queue, engine_output, engine_ready, display_on):
-    """Get the engine future from the matlab engine and put in queue if successfully."""
-    try:
-        if not engine_output and display_on:
-            queue.put(LogData(INFO, "Attempting to start Matlab..."))
-
-        result = get_matlab_engine(engine_ready, engine_output)
-        if display_on:
-            queue.put(LogData(INFO, "Got Matlab engine"))
-        if isinstance(result, Exception):
-            raise result
-        else:
-            engine_future = result
-            engine_future.result().cd(os.getcwd())
-            queue.put([engine_future])
-
-    except Exception as err:
-        queue.put(err)
-        return
 
 
 @dataclass
