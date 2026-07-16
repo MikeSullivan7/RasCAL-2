@@ -144,7 +144,6 @@ def test_empty_queue(mock_process, mock_matlab):
 @pytest.mark.parametrize("display", [True, False])
 @patch("ratapi.rat_core.RATMain", new=mock_rat_main)
 @patch("ratapi.outputs.make_results", new=MagicMock(spec=rat.outputs.Results))
-@patch("rascal2.core.runner.LOOP_PROCESS", new=False)
 def test_run(display):
     """Test that a run puts the correct items in the queue."""
     queue = Queue()
@@ -213,7 +212,6 @@ def test_run_error():
 
 
 @pytest.mark.parametrize("example", rat.examples.__all__)
-@patch("rascal2.core.runner.LOOP_PROCESS", new=False)
 def test_run_examples(example):
     """Test that the run function runs without an error on the ratapi example projects."""
     # skip convert rascal example

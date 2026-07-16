@@ -11,7 +11,6 @@ from PyQt6 import QtCore
 from rascal2.config import MatlabHelper, get_matlab_engine
 
 NUMBER_PROCESSES = 5
-LOOP_PROCESS = True
 
 
 class RATRunner(QtCore.QObject):
@@ -210,6 +209,27 @@ def run(queue: Queue, arg_queue: Queue, go_event, exit_event, engine_ready, engi
 
         queue.put((problem_definition, results))
         go_event.clear()
+
+
+def run_matlab_init_engine(queue, engine_output, engine_ready, display_on):
+    """Get the engine future from the matlab engine and put in queue if successfully."""
+    try:
+        if not engine_output and display_on:
+            queue.put(LogData(INFO, "Attempting to start Matlab..."))
+
+        result = get_matlab_engine(engine_ready, engine_output)
+        if display_on:
+            queue.put(LogData(INFO, "Got Matlab engine"))
+        if isinstance(result, Exception):
+            raise result
+        else:
+            engine_future = result
+            engine_future.result().cd(os.getcwd())
+            queue.put([engine_future])
+
+    except Exception as err:
+        queue.put(err)
+        return
 
 
 @dataclass

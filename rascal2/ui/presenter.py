@@ -241,7 +241,6 @@ class MainWindowPresenter:
         self.runner.set_runner_args(rat_inputs, self.model.controls.procedure, display_on, working_dir)
         self.view.terminal_widget.write("Initializing RAT Process...")
         self.runner.start()
-        print(self.runner.process.name)
 
     def handle_results(self):
         """Handle a RAT run being finished."""
