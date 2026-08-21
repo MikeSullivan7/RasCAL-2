@@ -1,11 +1,7 @@
-import time
-from pathlib import Path
-
 from PyQt6.QtTest import QTest
-from PyQt6 import QtCore
 
-from tests.system.gui_system_base import GuiSystemBase, SHOW_DELAY, SHORT_DELAY
 from rascal2.dialogs.startup_dialog import LoadDialog
+from tests.system.gui_system_base import SHORT_DELAY, GuiSystemBase
 
 
 class TestGuiSystemLoading(GuiSystemBase):
