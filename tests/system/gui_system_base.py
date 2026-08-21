@@ -27,6 +27,7 @@ class GuiSystemBase(unittest.TestCase):
     app: QApplication
 
     def setUp(self) -> None:
+        self.start_processes_old = os.getenv("START_PROCESSES")
         os.environ["START_PROCESSES"] = "False"
         self.no_exceptions = True
 
@@ -48,6 +49,7 @@ class GuiSystemBase(unittest.TestCase):
             message="Main window did not close within 3 seconds",
         )
         del self.main_window
+        os.environ["START_PROCESSES"] = self.start_processes_old
 
     def exception_hook(self, exc_type, exc_value, exc_traceback):
         self.no_exceptions = False

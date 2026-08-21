@@ -1,4 +1,11 @@
-from tests.system.gui_system_base import GuiSystemBase
+import time
+from pathlib import Path
+
+from PyQt6.QtTest import QTest
+from PyQt6 import QtCore
+
+from tests.system.gui_system_base import GuiSystemBase, SHOW_DELAY, SHORT_DELAY
+from rascal2.dialogs.startup_dialog import LoadDialog
 
 
 class TestGuiSystemLoading(GuiSystemBase):
@@ -9,4 +16,10 @@ class TestGuiSystemLoading(GuiSystemBase):
         super().tearDown()
 
     def test_load(self):
-        pass
+        QTest.qWait(SHORT_DELAY)
+        self.main_window.startup_dlg.import_project_button.click()
+        load_dialog = self.main_window.findChild(LoadDialog)
+        load_dialog.tabs.setCurrentIndex(2)
+        load_dialog.example_list_widget.itemClicked.emit(load_dialog.example_list_widget.item(0))
+        QTest.qWait(SHORT_DELAY)
+        assert self.main_window.presenter.model.project.name == "DSPC Standard Layers"
