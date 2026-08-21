@@ -1,4 +1,5 @@
 import os
+import sys
 import unittest
 from collections.abc import Callable
 
@@ -27,11 +28,18 @@ class GuiSystemBase(unittest.TestCase):
 
     def setUp(self) -> None:
         os.environ["START_PROCESSES"] = "False"
+        self.no_exceptions = True
+
+        sys.excepthook = self.exception_hook
         self.main_window = MainWindowView()
         self.main_window.show()
         QTest.qWait(SHORT_DELAY)
 
     def tearDown(self) -> None:
+        if not self.no_exceptions:
+            raise Exception("An exception occurred in a PyQt slot")
+        sys.excepthook = sys.__excepthook__
+
         self.main_window.close()
         wait_until(
             lambda: not self.main_window.isVisible(),
@@ -40,3 +48,7 @@ class GuiSystemBase(unittest.TestCase):
             message="Main window did not close within 3 seconds",
         )
         del self.main_window
+
+    def exception_hook(self, exc_type, exc_value, exc_traceback):
+        self.no_exceptions = False
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
