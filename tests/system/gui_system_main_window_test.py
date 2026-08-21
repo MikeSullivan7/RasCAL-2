@@ -2,7 +2,6 @@ from tests.system.gui_system_base import GuiSystemBase
 
 
 class TestGuiSystemMainWindow(GuiSystemBase):
-
     def setUp(self) -> None:
         super().setUp()
 
