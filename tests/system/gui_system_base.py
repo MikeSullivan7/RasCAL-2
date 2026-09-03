@@ -3,8 +3,9 @@ import sys
 import unittest
 from collections.abc import Callable
 
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from rascal2.ui.view import MainWindowView
 
@@ -24,7 +25,7 @@ def wait_until(
 
 
 class GuiSystemBase(unittest.TestCase):
-    app: QApplication
+    app: QApplication = QApplication.instance()
 
     def setUp(self) -> None:
         self.start_processes_old = os.getenv("START_PROCESSES")
@@ -40,7 +41,7 @@ class GuiSystemBase(unittest.TestCase):
         if not self.no_exceptions:
             raise Exception("An exception occurred in a PyQt slot")
         sys.excepthook = sys.__excepthook__
-
+        QTimer.singleShot(SHORT_DELAY, lambda: self._click_messagebox("Cancel"))
         self.main_window.close()
         wait_until(
             lambda: not self.main_window.isVisible(),
@@ -54,3 +55,19 @@ class GuiSystemBase(unittest.TestCase):
     def exception_hook(self, exc_type, exc_value, exc_traceback):
         self.no_exceptions = False
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+    @classmethod
+    def _click_messagebox(cls, button_text: str):
+        """Needs to be queued with QTimer.singleShot before triggering the message box."""
+        for widget in cls.app.topLevelWidgets():
+            print(f"{widget=}")
+            if isinstance(widget, QMessageBox) and widget.isVisible():
+                for button in widget.buttons():
+                    if button.text().replace("&", "") == button_text:
+                        QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+                        return
+                button_texts = [button.text() for button in widget.buttons()]
+                raise ValueError(
+                    f"Could not find button '{button_text}' in {button_texts}.\n"
+                    f"Message box: {widget.windowTitle()} {widget.text()}"
+                )
