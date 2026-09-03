@@ -60,7 +60,6 @@ class GuiSystemBase(unittest.TestCase):
     def _click_messagebox(cls, button_text: str):
         """Needs to be queued with QTimer.singleShot before triggering the message box."""
         for widget in cls.app.topLevelWidgets():
-            print(f"{widget=}")
             if isinstance(widget, QMessageBox) and widget.isVisible():
                 for button in widget.buttons():
                     if button.text().replace("&", "") == button_text:
