@@ -81,7 +81,7 @@ class RATRunner(QtCore.QObject):
         """Create process and multiprocessing event."""
         self.go_event = Event()
         self.exit_event = Event()
-        matlab_helper = MatlabHelper()
+        self.matlab_helper = MatlabHelper()
         self.process = Process(
             target=run,
             args=(
@@ -91,8 +91,8 @@ class RATRunner(QtCore.QObject):
                 self.plot_queue,
                 self.go_event,
                 self.exit_event,
-                matlab_helper.ready_event,
-                matlab_helper.engine_output,
+                self.matlab_helper.ready_event,
+                self.matlab_helper.engine_output,
             ),
         )
 
@@ -199,6 +199,7 @@ class RATRunner(QtCore.QObject):
             self.process.kill()
         self.process = None
         self.clear_queues_and_events()
+        self.matlab_helper.close_event.set()
 
 
 def init_matlab_engine(engine_ready, engine_output, msg_queue):

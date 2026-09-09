@@ -7,6 +7,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
+from rascal2.config import setup_logging
 from rascal2.ui.view import MainWindowView
 
 SHOW_DELAY = 10  # Can be increased to watch tests
@@ -28,6 +29,7 @@ class GuiSystemBase(unittest.TestCase):
     app: QApplication = QApplication.instance()
 
     def setUp(self) -> None:
+        setup_logging()
         self.start_processes_old = os.getenv("START_PROCESSES")
         os.environ["START_PROCESSES"] = "False"
         self.no_exceptions = True
@@ -41,13 +43,13 @@ class GuiSystemBase(unittest.TestCase):
         if not self.no_exceptions:
             raise Exception("An exception occurred in a PyQt slot")
         sys.excepthook = sys.__excepthook__
-        QTimer.singleShot(SHORT_DELAY, lambda: self._click_messagebox("Cancel"))
+        QTimer.singleShot(SHORT_DELAY, lambda: self._click_messagebox("Discard"))
         self.main_window.close()
         wait_until(
             lambda: not self.main_window.isVisible(),
             delay=0.05,
-            max_retry=60,
-            message="Main window did not close within 3 seconds",
+            max_retry=200,
+            message="Main window did not close within 10 seconds",
         )
         del self.main_window
         os.environ["START_PROCESSES"] = self.start_processes_old

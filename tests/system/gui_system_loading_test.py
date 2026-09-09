@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from PyQt6.QtTest import QTest
+from PyQt6.QtWidgets import QApplication
 
 from rascal2.dialogs.startup_dialog import LoadDialog
 from tests.system.gui_system_base import SHORT_DELAY, GuiSystemBase, wait_until
@@ -31,7 +32,10 @@ class TestGuiSystemLoading(GuiSystemBase):
         load_dialog.tabs.setCurrentIndex(2)
         load_dialog.example_list_widget.itemClicked.emit(load_dialog.example_list_widget.item(0))
         wait_until(lambda: self.main_window.controls_widget.chi_squared.text() != "")
+        self.main_window.controls_widget.update_chi_squared("")
+        QApplication.processEvents()
         self.main_window.controls_widget.run_button.click()
-        wait_until(lambda: not self.main_window.controls_widget.run_button.isChecked())
+        wait_until(lambda: "Finished RAT" in self.main_window.terminal_widget.text_area.toPlainText())
+        QTest.qWait(SHORT_DELAY)
         assert self.main_window.controls_widget.chi_squared.text() == "132.939"
         assert self.main_window.presenter.runner.error is None
