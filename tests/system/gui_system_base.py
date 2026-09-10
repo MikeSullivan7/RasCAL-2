@@ -44,8 +44,8 @@ class GuiSystemBase(unittest.TestCase):
         if not self.no_exceptions:
             raise Exception("An exception occurred in a PyQt slot")
         sys.excepthook = sys.__excepthook__
-        LOGGER = logging.getLogger("rascal2")
-        LOGGER.handlers.clear()
+        logger = logging.getLogger("rascal2")
+        logger.handlers.clear()
         QTimer.singleShot(SHORT_DELAY, lambda: self._click_messagebox("Discard"))
         self.main_window.close()
         wait_until(
