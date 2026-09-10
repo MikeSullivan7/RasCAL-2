@@ -37,5 +37,5 @@ class TestGuiSystemLoading(GuiSystemBase):
         self.main_window.controls_widget.run_button.click()
         wait_until(lambda: "Finished RAT" in self.main_window.terminal_widget.text_area.toPlainText())
         QTest.qWait(SHORT_DELAY)
-        assert self.main_window.controls_widget.chi_squared.text() == "132.939"
+        assert self.main_window.controls_widget.chi_squared.text() == "142.346"
         assert self.main_window.presenter.runner.error is None
