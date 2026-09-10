@@ -46,7 +46,7 @@ class GuiSystemBase(unittest.TestCase):
         sys.excepthook = sys.__excepthook__
         logger = logging.getLogger("rascal2")
         logger.handlers.clear()
-        QTimer.singleShot(SHORT_DELAY, lambda: self._click_messagebox("Discard"))
+        QTimer.singleShot(SHORT_DELAY, lambda: self._click_messagebox(["Discard", "Don't Save"]))
         self.main_window.close()
         wait_until(
             lambda: not self.main_window.isVisible(),
@@ -62,16 +62,20 @@ class GuiSystemBase(unittest.TestCase):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
     @classmethod
-    def _click_messagebox(cls, button_text: str):
+    def _click_messagebox(cls, button_text_list: list[str]):
         """Needs to be queued with QTimer.singleShot before triggering the message box."""
+        no_buttons_found = True
+        button_texts = []
         for widget in cls.app.topLevelWidgets():
             if isinstance(widget, QMessageBox) and widget.isVisible():
-                for button in widget.buttons():
-                    if button.text().replace("&", "") == button_text:
-                        QTest.mouseClick(button, Qt.MouseButton.LeftButton)
-                        return
-                button_texts = [button.text() for button in widget.buttons()]
-                raise ValueError(
-                    f"Could not find button '{button_text}' in {button_texts}.\n"
-                    f"Message box: {widget.windowTitle()} {widget.text()}"
-                )
+                for button_text in button_text_list:
+                    for button in widget.buttons():
+                        if button.text().replace("&", "") == button_text:
+                            QTest.mouseClick(button, Qt.MouseButton.LeftButton)
+                            no_buttons_found = False
+                    button_texts = [button.text() for button in widget.buttons()]
+                if no_buttons_found:
+                    raise ValueError(
+                        f"Could not find buttons '{button_text_list} in {button_texts}'.\n"
+                        f"Message box: {widget.windowTitle()} {widget.text()}"
+                    )
