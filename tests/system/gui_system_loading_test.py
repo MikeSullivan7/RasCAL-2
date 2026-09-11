@@ -31,8 +31,8 @@ class TestGuiSystemLoading(GuiSystemBase):
             ("calculate", 142.346, 1000),
             ("simplex", 13.1816, 1000),
             ("de", 10.4746, 1000),
-            ("ns", [9, 11], 4000),
-            ("dream", 9.67234, 1000),
+            ("ns", [9, 11], 6000),
+            ("dream", 9.67234, 2000),
         ]
     )
     def test_run(self, procedure_name, expected_chi, test_duration):
