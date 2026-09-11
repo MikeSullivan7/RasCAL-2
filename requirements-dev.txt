@@ -3,3 +3,4 @@ pytest-cov
 ruff
 Sphinx
 pydata-sphinx-theme
+parameterized
