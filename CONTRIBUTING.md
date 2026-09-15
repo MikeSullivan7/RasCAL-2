@@ -41,6 +41,15 @@ The coverage report can be saved to the directory htmlcov by running the tests w
 
 For information on other coverage report formats, see https://pytest-cov.readthedocs.io/en/latest/reporting.html
 
+System tests which load the GUI and perform common workflows are run by default but can be excluded via
+
+    pytest tests --skip_system_tests
+
+Some tests can be time-consuming and are only run when necessary, i.e. they are skipped by default and marked as "slow".
+To include slow tests use the flag:
+
+    pytest tests --run_slow_tests
+
 Documentation
 -------------
 * The documentation will be hosted on GitHub pages.
