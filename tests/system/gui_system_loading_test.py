@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 from parameterized import parameterized
@@ -48,19 +49,17 @@ class TestGuiSystemLoading(GuiSystemBase):
             lambda: "Finished RAT" in self.main_window.terminal_widget.text_area.toPlainText(), max_retry=test_duration
         )
         QTest.qWait(SHORT_DELAY)
-        if isinstance(expected_chi, list):
-            assert expected_chi[0] <= float(self.main_window.controls_widget.chi_squared.text()) <= expected_chi[1]
-        else:
-            assert self.main_window.controls_widget.chi_squared.text() == str(expected_chi)
+        assert self.main_window.controls_widget.chi_squared.text() == str(expected_chi)
         assert self.main_window.presenter.runner.error is None
 
     @parameterized.expand(
         [
-            ("ns", [9, 11], 6000),
+            ("ns", 9.47214, 6000),
             ("dream", 9.67234, 2000),
         ]
     )
     def test_run_slow(self, procedure_name, expected_chi, test_duration):
+        random.seed(10)
         QTest.qWait(SHORT_DELAY)
         self.main_window.startup_dlg.import_project_button.click()
         load_dialog = self.main_window.findChild(LoadDialog)
@@ -75,8 +74,5 @@ class TestGuiSystemLoading(GuiSystemBase):
             lambda: "Finished RAT" in self.main_window.terminal_widget.text_area.toPlainText(), max_retry=test_duration
         )
         QTest.qWait(SHORT_DELAY)
-        if isinstance(expected_chi, list):
-            assert expected_chi[0] <= float(self.main_window.controls_widget.chi_squared.text()) <= expected_chi[1]
-        else:
-            assert self.main_window.controls_widget.chi_squared.text() == str(expected_chi)
+        assert self.main_window.controls_widget.chi_squared.text() == str(expected_chi)
         assert self.main_window.presenter.runner.error is None
