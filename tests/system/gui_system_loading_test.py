@@ -31,11 +31,36 @@ class TestGuiSystemLoading(GuiSystemBase):
             ("calculate", 142.346, 1000),
             ("simplex", 13.1816, 1000),
             ("de", 10.4746, 1000),
+        ]
+    )
+    def test_run(self, procedure_name, expected_chi, test_duration):
+        QTest.qWait(SHORT_DELAY)
+        self.main_window.startup_dlg.import_project_button.click()
+        load_dialog = self.main_window.findChild(LoadDialog)
+        load_dialog.tabs.setCurrentIndex(2)
+        load_dialog.example_list_widget.itemClicked.emit(load_dialog.example_list_widget.item(0))
+        wait_until(lambda: self.main_window.controls_widget.chi_squared.text() != "")
+        self.main_window.controls_widget.update_chi_squared("")
+        self.main_window.controls_widget.procedure_dropdown.setCurrentText(procedure_name)
+        QApplication.processEvents()
+        self.main_window.controls_widget.run_button.click()
+        wait_until(
+            lambda: "Finished RAT" in self.main_window.terminal_widget.text_area.toPlainText(), max_retry=test_duration
+        )
+        QTest.qWait(SHORT_DELAY)
+        if isinstance(expected_chi, list):
+            assert expected_chi[0] <= float(self.main_window.controls_widget.chi_squared.text()) <= expected_chi[1]
+        else:
+            assert self.main_window.controls_widget.chi_squared.text() == str(expected_chi)
+        assert self.main_window.presenter.runner.error is None
+
+    @parameterized.expand(
+        [
             ("ns", [9, 11], 6000),
             ("dream", 9.67234, 2000),
         ]
     )
-    def test_run(self, procedure_name, expected_chi, test_duration):
+    def test_run_slow(self, procedure_name, expected_chi, test_duration):
         QTest.qWait(SHORT_DELAY)
         self.main_window.startup_dlg.import_project_button.click()
         load_dialog = self.main_window.findChild(LoadDialog)
