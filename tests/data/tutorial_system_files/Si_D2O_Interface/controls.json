@@ -1,0 +1,1 @@
+{"procedure":"simplex","parallel":"single","numSimulationPoints":500,"resampleMinAngle":0.9,"resampleNPoints":50,"display":"iter","xTolerance":1e-6,"funcTolerance":1e-6,"maxFuncEvals":10000,"maxIterations":1000,"updateFreq":1,"updatePlotFreq":20}
