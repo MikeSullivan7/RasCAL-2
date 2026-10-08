@@ -1,9 +1,10 @@
 from pathlib import Path
 
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QPushButton, QMainWindow, QApplication
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
 
 from rascal2.dialogs.startup_dialog import LoadDialog
+from rascal2.widgets.project.lists import StandardLayerModelWidget
 from tests.system.gui_system_base import SHORT_DELAY, GuiSystemBase, wait_until
 
 
@@ -42,7 +43,8 @@ class TestGuiSystemLoading(GuiSystemBase):
         load_tutorial_file(self.main_window, "../../data/tutorial_system_files/Si_D2O_interface/")
         wait_until(lambda: self.main_window.controls_widget.chi_squared.text() != "")
         param_model = self.main_window.project_widget.view_tabs["Parameters"].tables["parameters"].model
-        ex_param_model = self.main_window.project_widget.view_tabs["Experimental Parameters"].tables["scalefactors"].model
+        ex_param_model = (
+            self.main_window.project_widget.view_tabs["Experimental Parameters"].tables["scalefactors"].model)
         assert param_model.classlist.data[0].value == 6.811291229641589
         assert ex_param_model.classlist.data[0].value == 0.1
         self.main_window.controls_widget.run_button.click()
@@ -60,14 +62,72 @@ class TestGuiSystemLoading(GuiSystemBase):
     def test_adding_parameters(self):
         load_tutorial_file(self.main_window, "../../data/tutorial_system_files/Si_D2O_interface/")
         wait_until(lambda: self.main_window.controls_widget.chi_squared.text() != "")
-        QTest.qWait(SHORT_DELAY * 100)
         self.main_window.project_widget.edit_project_button.click()
-        print(self.main_window.project_widget.view_tabs["Parameters"].tables["parameters"])
         QApplication.processEvents()
         QTest.qWait(SHORT_DELAY)
-        self.main_window.project_widget.view_tabs["Parameters"].beginResetModel()
-        self.main_window.project_widget.view_tabs["Parameters"].tables["parameters"].add_button.click()
-        self.main_window.project_widget.view_tabs["Parameters"].tables["parameters"].add_button.click()
+        table_model = self.main_window.project_widget.edit_tabs["Parameters"].tables['parameters'].model
+        add_param_button = self.main_window.project_widget.edit_tabs["Parameters"].tables["parameters"].add_button
+        old_row_count = table_model.rowCount()
+        add_param_button.click()
+        assert table_model.rowCount() == old_row_count + 1
+        table_model.setData(table_model.index(1, 1), 2)
+        table_model.setData(table_model.index(1, 2), "Si02 Thickness")
+        table_model.setData(table_model.index(1, 3), 0)
+        table_model.setData(table_model.index(1, 4), 10)
+        table_model.setData(table_model.index(1, 5), 25)
+
+        add_param_button.click()
+        table_model.setData(table_model.index(2, 1), 2)
+        table_model.setData(table_model.index(2, 2), "Si02 Roughness")
+        table_model.setData(table_model.index(2, 3), 0)
+        table_model.setData(table_model.index(2, 4), 3)
+        table_model.setData(table_model.index(2, 5), 7)
+
+        add_param_button.click()
+        table_model.setData(table_model.index(3, 1), 0)
+        table_model.setData(table_model.index(3, 2), "Si02 SLD")
+        table_model.setData(table_model.index(3, 3), 0.0000033)
+        table_model.setData(table_model.index(3, 4), 0.00000341)
+        table_model.setData(table_model.index(3, 5), 0.0000035)
+
+        add_param_button.click()
+        table_model.setData(table_model.index(4, 1), 2)
+        table_model.setData(table_model.index(4, 2), "Si02 Hydration")
+        table_model.setData(table_model.index(4, 3), 0)
+        table_model.setData(table_model.index(4, 4), 20)
+        table_model.setData(table_model.index(4, 5), 30)
+
+        QTest.qWait(SHORT_DELAY)
+
+        self.main_window.project_widget.project_tab.setCurrentIndex(2)
+        self.main_window.project_widget.edit_tabs["Layers"].tables["layers"].add_button.click()
+        layer_table_model = self.main_window.project_widget.edit_tabs["Layers"].tables['layers'].model
+        layer_table_model.beginResetModel()
+
+        layer_table_model.setData(layer_table_model.index(0, 1), "Si02")
+        layer_table_model.setData(layer_table_model.index(0, 2), "Si02 Thickness")
+        layer_table_model.setData(layer_table_model.index(0, 3), "Si02 SLD")
+        layer_table_model.setData(layer_table_model.index(0, 4), "Si02 Roughness")
+        layer_table_model.setData(layer_table_model.index(0, 5), "Si02 Hydration")
+        layer_table_model.setData(layer_table_model.index(0, 6), "bulk out")
+
+        QTest.qWait(SHORT_DELAY)
+        self.main_window.project_widget.project_tab.setCurrentIndex(8)
+        con_widget = self.main_window.project_widget.edit_tabs['Contrasts'].tables['contrasts']
+        slm = con_widget.findChildren(StandardLayerModelWidget)[0]
+        slm.add_button.click()
 
         QApplication.processEvents()
-        QTest.qWait(SHORT_DELAY*100)
+        self.main_window.setFocus()
+        wait_until(lambda: slm.model.data(slm.model.index(0, 0)) == 'Si02', max_retry=1000)
+
+        assert slm.model.rowCount() == 1
+        self.main_window.project_widget.save_project_button.click()
+        QApplication.processEvents()
+        QTest.qWait(SHORT_DELAY)
+        self.main_window.controls_widget.run_button.click()
+        wait_until(
+            lambda: "Finished RAT" in self.main_window.terminal_widget.text_area.toPlainText()
+        )
+        QTest.qWait(SHORT_DELAY)
+        assert self.main_window.controls_widget.chi_squared.text() == '1.51665'
