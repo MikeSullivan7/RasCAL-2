@@ -25,7 +25,7 @@ class TestGuiSystemLoading(GuiSystemBase):
         ):
             wait_until(
                 lambda: self.main_window.terminal_widget.text_area.toPlainText().split("\n")[-1] != most_recent_line,
-                max_retry=test_duration
+                max_retry=test_duration,
             )
 
     def test_load(self):
