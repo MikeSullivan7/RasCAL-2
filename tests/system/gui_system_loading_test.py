@@ -1,6 +1,7 @@
 import random
 from pathlib import Path
 
+import pytest
 from parameterized import parameterized
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication
@@ -60,6 +61,7 @@ class TestGuiSystemLoading(GuiSystemBase):
         assert self.main_window.controls_widget.chi_squared.text() == str(expected_chi)
         assert self.main_window.presenter.runner.error is None
 
+    @pytest.mark.windows
     @parameterized.expand(
         [
             ("dream", 9.67234, 2000),

@@ -1,3 +1,5 @@
+import platform
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -58,6 +60,8 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "system: GUI system tests")
     config.addinivalue_line("markers", "unit: unit tests")
     config.addinivalue_line("markers", "slow: marks slow tests which only run on review")
+    config.addinivalue_line("markers", "linux: marks tests that should only run on Linux")
+    config.addinivalue_line("markers", "windows: marks tests that should only run on Windows")
 
 
 allowed_markers = []
@@ -80,6 +84,10 @@ def pytest_collection_modifyitems(config, items):
         for mark in item.own_markers:
             if "parametrize" in mark.name:
                 continue
+            if "linux" in mark.name and sys.platform != "linux":
+                skipped_tests.append(pytest.mark.linux)
+            elif "windows" in mark.name and sys.platform != "win32":
+                skipped_tests.append(pytest.mark.windows)
             if mark not in allowed_markers:
                 item.add_marker(pytest.mark.skip(reason="Test not selected"))
                 skipped_tests.append(item.nodeid)
