@@ -41,7 +41,6 @@ class TestGuiSystemLoading(GuiSystemBase):
     @parameterized.expand(
         [
             ("calculate", 142.346),
-            ("simplex", 13.1816),
             ("de", 10.4746),
         ]
     )
@@ -61,7 +60,27 @@ class TestGuiSystemLoading(GuiSystemBase):
         assert self.main_window.controls_widget.chi_squared.text() == str(expected_chi)
         assert self.main_window.presenter.runner.error is None
 
-    @pytest.mark.windows
+    @parameterized.expand(
+        [
+            ("simplex", 13.1816),
+        ]
+    )
+    def test_run_windows(self, procedure_name, expected_chi):
+        QTest.qWait(SHORT_DELAY)
+        self.main_window.startup_dlg.import_project_button.click()
+        load_dialog = self.main_window.findChild(LoadDialog)
+        load_dialog.tabs.setCurrentIndex(2)
+        load_dialog.example_list_widget.itemClicked.emit(load_dialog.example_list_widget.item(0))
+        wait_until(lambda: self.main_window.controls_widget.chi_squared.text() != "")
+        self.main_window.controls_widget.update_chi_squared("")
+        self.main_window.controls_widget.procedure_dropdown.setCurrentText(procedure_name)
+        QApplication.processEvents()
+        self.main_window.controls_widget.run_button.click()
+        self.watch_output()
+        QTest.qWait(SHORT_DELAY)
+        assert self.main_window.controls_widget.chi_squared.text() == str(expected_chi)
+        assert self.main_window.presenter.runner.error is None
+
     @parameterized.expand(
         [
             ("dream", 9.67234, 2000),

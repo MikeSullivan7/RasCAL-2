@@ -81,13 +81,13 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.slow)
         else:
             item.add_marker(pytest.mark.unit)
+        if "linux" in item.nodeid and sys.platform != "linux":
+            skipped_tests.append(pytest.mark.linux)
+        elif "windows" in item.nodeid and sys.platform != "win32":
+            skipped_tests.append(pytest.mark.windows)
         for mark in item.own_markers:
             if "parametrize" in mark.name:
                 continue
-            if "linux" in mark.name and sys.platform != "linux":
-                skipped_tests.append(pytest.mark.linux)
-            elif "windows" in mark.name and sys.platform != "win32":
-                skipped_tests.append(pytest.mark.windows)
             if mark not in allowed_markers:
                 item.add_marker(pytest.mark.skip(reason="Test not selected"))
                 skipped_tests.append(item.nodeid)
