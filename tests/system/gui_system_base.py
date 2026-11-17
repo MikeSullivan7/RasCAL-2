@@ -43,8 +43,10 @@ class GuiSystemBase(unittest.TestCase):
         sys.excepthook = sys.__excepthook__
         logger = logging.getLogger("rascal2")
         logger.handlers.clear()
-        if not self.main_window.presenter.runner.matlab_helper.close_event.is_set():
-            self.main_window.presenter.runner.matlab_helper.close_event.set()
+        if not self.main_window.presenter.runner.exit_event.is_set():
+            self.main_window.presenter.runner.exit_event.set()
+        if not self.main_window.presenter.runner.go_event.is_set():
+            self.main_window.presenter.runner.go_event.set()
         QTimer.singleShot(SHORT_DELAY, lambda: self._click_messagebox())
         self.main_window.close()
         wait_until(
