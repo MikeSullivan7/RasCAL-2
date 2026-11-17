@@ -41,7 +41,6 @@ class TestGuiSystemLoading(GuiSystemBase):
     @parameterized.expand(
         [
             ("calculate", 142.346),
-            ("de", 10.4746),
         ]
     )
     def test_run(self, procedure_name, expected_chi):
@@ -63,6 +62,7 @@ class TestGuiSystemLoading(GuiSystemBase):
     @parameterized.expand(
         [
             ("simplex", 13.1816),
+            ("de", 10.4746),
         ]
     )
     def test_run_windows(self, procedure_name, expected_chi):
@@ -86,7 +86,7 @@ class TestGuiSystemLoading(GuiSystemBase):
             ("dream", 9.67234, 2000),
         ]
     )
-    def test_run_slow(self, procedure_name, expected_chi, test_duration):
+    def test_run_slow_windows(self, procedure_name, expected_chi, test_duration):
         self.main_window.startup_dlg.import_project_button.click()
         load_dialog = self.main_window.findChild(LoadDialog)
         load_dialog.tabs.setCurrentIndex(2)

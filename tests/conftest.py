@@ -82,9 +82,11 @@ def pytest_collection_modifyitems(config, items):
         else:
             item.add_marker(pytest.mark.unit)
         if "linux" in item.nodeid and sys.platform != "linux":
-            skipped_tests.append(pytest.mark.linux)
+            skipped_tests.append(item.nodeid)
+            item.add_marker(pytest.mark.skip(reason="Test not selected"))
         elif "windows" in item.nodeid and sys.platform != "win32":
-            skipped_tests.append(pytest.mark.windows)
+            skipped_tests.append(item.nodeid)
+            item.add_marker(pytest.mark.skip(reason="Test not selected"))
         for mark in item.own_markers:
             if "parametrize" in mark.name:
                 continue
