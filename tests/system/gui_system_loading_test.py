@@ -1,7 +1,6 @@
 import random
 from pathlib import Path
 
-import pytest
 from parameterized import parameterized
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication
